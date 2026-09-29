@@ -1,0 +1,11 @@
+<hud>
+    <slot anchor="TOP_LEFT">
+        <indicator ref="fps" />
+    </slot>
+    <slot anchor="TOP_RIGHT">
+        <indicator ref="roads" />
+        <indicator ref="intersections" />
+        <indicator ref="vehicles" />
+        <indicator ref="stations" />
+    </slot>
+</hud>

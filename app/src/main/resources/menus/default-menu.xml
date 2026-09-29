@@ -1,0 +1,5 @@
+<menu id="default-menu" label="MENU">
+    <button id="vehicle" label="VEHICULE" action="toggle-vehicle" />
+    <button id="station" label="STATION" action="toggle-station" />
+    <button id="depot" label="DEPOT" action="toggle-depot" />
+</menu>

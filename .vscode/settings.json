@@ -1,0 +1,16 @@
+{
+    "java.compile.nullAnalysis.mode": "automatic",
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "[java]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true,
+        "editor.formatOnType": false,
+        "editor.autoIndent": "advanced"
+    },
+    "chat.tools.terminal.autoApprove": {
+        "/^\\./gradlew :app:test$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
