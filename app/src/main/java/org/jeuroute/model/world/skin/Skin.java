@@ -1,8 +1,8 @@
-package org.jeuroute.model.interfaces;
+package org.jeuroute.model.world.skin;
 
 import java.awt.Point;
 
-public interface Peau {
+public interface Skin {
 	public void display(Point start, Point end);
 
 	public default void display(Point start, Point end, double scale) {

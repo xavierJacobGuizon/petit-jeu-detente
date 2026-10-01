@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jeuroute.configuration.XmlResourceCache;
 import org.jeuroute.gamecore.hud.HudAnchor;
-import org.jeuroute.model.configuration.HudIndicatorConfiguration;
+import org.jeuroute.configuration.model.HudIndicatorConfiguration;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;

@@ -9,8 +9,8 @@ import org.jeuroute.gamecore.hud.HudAnchor;
 import org.jeuroute.gamecore.hud.HudButton;
 import org.jeuroute.gamecore.hud.HudIndicator;
 import org.jeuroute.gamecore.hud.HudIndicatorSlot;
-import org.jeuroute.model.configuration.HudIndicatorConfiguration;
-import org.jeuroute.model.configuration.MenuDefinition;
+import org.jeuroute.configuration.model.HudIndicatorConfiguration;
+import org.jeuroute.configuration.model.MenuDefinition;
 
 public final class HudManager {
 

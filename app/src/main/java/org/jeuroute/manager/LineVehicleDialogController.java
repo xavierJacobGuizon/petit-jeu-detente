@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.function.Supplier;
 import org.jeuroute.gamecore.hud.Hud;
 import org.jeuroute.gamecore.hud.HudButton;
-import org.jeuroute.model.jouet.LineColor;
-import org.jeuroute.model.jouet.TransitLine;
-import org.jeuroute.model.jouet.Vehicle;
+import org.jeuroute.model.world.LineColor;
+import org.jeuroute.model.world.TransitLine;
+import org.jeuroute.model.world.Vehicle;
 
 /**
  * Gère les boîtes de dialogue HUD relatives aux lignes (liste, options,

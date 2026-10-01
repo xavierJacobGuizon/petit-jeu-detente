@@ -1,12 +1,12 @@
-package org.jeuroute.model.interfaces.jouetpeau;
+package org.jeuroute.model.world.skin;
 
 import static org.lwjgl.opengl.GL11.*;
 
 import java.awt.Point;
-import org.jeuroute.model.interfaces.Peau;
-import org.jeuroute.model.jouet.Depot;
+import org.jeuroute.model.world.skin.Skin;
+import org.jeuroute.model.world.Depot;
 
-public final class DepotPeau implements Peau {
+public final class DepotSkin implements Skin {
 
 	@Override
 	public void display(Point position, Point accessPosition) {

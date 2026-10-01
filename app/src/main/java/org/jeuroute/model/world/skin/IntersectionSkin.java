@@ -1,4 +1,4 @@
-package org.jeuroute.model.interfaces.jouetpeau;
+package org.jeuroute.model.world.skin;
 
 import static org.lwjgl.opengl.GL11.GL_QUADS;
 import static org.lwjgl.opengl.GL11.glBegin;
@@ -8,15 +8,15 @@ import static org.lwjgl.opengl.GL11.glVertex2d;
 
 import java.awt.Point;
 
-import org.jeuroute.model.interfaces.Peau;
+import org.jeuroute.model.world.skin.Skin;
 
-public class IntersectionPeau implements Peau {
+public class IntersectionSkin implements Skin {
 
     private final float r;
     private final float g;
     private final float b;
 
-    public IntersectionPeau(float r, float g, float b) {
+    public IntersectionSkin(float r, float g, float b) {
         this.r = r;
         this.g = g;
         this.b = b;

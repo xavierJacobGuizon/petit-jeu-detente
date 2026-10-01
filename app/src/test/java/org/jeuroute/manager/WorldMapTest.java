@@ -5,9 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.EnumSet;
-import org.jeuroute.model.jouet.Depot;
-import org.jeuroute.model.jouet.ResourceBuilding;
-import org.jeuroute.model.jouet.ResourceType;
+import org.jeuroute.model.world.Depot;
+import org.jeuroute.model.world.ResourceBuilding;
+import org.jeuroute.model.world.ResourceType;
 import org.junit.jupiter.api.Test;
 
 class WorldMapTest {

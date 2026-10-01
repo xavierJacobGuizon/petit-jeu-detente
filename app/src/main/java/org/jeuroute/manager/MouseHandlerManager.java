@@ -7,9 +7,9 @@ import java.util.function.Consumer;
 import org.jeuroute.gamecore.MouseHandler;
 import org.jeuroute.gamecore.WorldRenderer;
 import org.jeuroute.gamecore.preview.PlacementPreview;
-import org.jeuroute.model.jouet.RoadGraph;
-import org.jeuroute.model.jouet.RouteTemporaire;
-import org.jeuroute.model.jouet.Station;
+import org.jeuroute.model.world.RoadGraph;
+import org.jeuroute.model.world.RouteTemporaire;
+import org.jeuroute.model.world.Station;
 
 public class MouseHandlerManager {
 

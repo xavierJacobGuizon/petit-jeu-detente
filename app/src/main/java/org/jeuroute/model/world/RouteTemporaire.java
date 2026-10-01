@@ -1,21 +1,21 @@
-package org.jeuroute.model.jouet;
+package org.jeuroute.model.world;
 
 import java.awt.Point;
-import org.jeuroute.model.interfaces.Peau;
-import org.jeuroute.model.interfaces.jouetpeau.RoadPeau;
+import org.jeuroute.model.world.skin.Skin;
+import org.jeuroute.model.world.skin.RoadSkin;
 
 public class RouteTemporaire {
 
-	private final Peau roadPeau;
-	private final Peau invalidRoadPeau;
+	private final Skin roadSkin;
+	private final Skin invalidRoadSkin;
 	private final Point start;
 	private Point end;
 
 	public RouteTemporaire(Point start, Point end) {
 		this.start = RoadGraph.snapPoint(start);
 		this.end = RoadGraph.snapPoint(end);
-		this.roadPeau = new RoadPeau(1.0f, 0.5f, 0.3f);
-		this.invalidRoadPeau = new RoadPeau(1.0f, 0.12f, 0.2f);
+		this.roadSkin = new RoadSkin(1.0f, 0.5f, 0.3f);
+		this.invalidRoadSkin = new RoadSkin(1.0f, 0.12f, 0.2f);
 	}
 
 	public Point getStart() {
@@ -50,6 +50,6 @@ public class RouteTemporaire {
 	}
 
 	public void display(boolean valid, double scale) {
-		(valid ? roadPeau : invalidRoadPeau).display(start, end, scale);
+		(valid ? roadSkin : invalidRoadSkin).display(start, end, scale);
 	}
 }

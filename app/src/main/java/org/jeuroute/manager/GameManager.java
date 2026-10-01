@@ -9,13 +9,13 @@ import org.jeuroute.gamecore.WorldRenderer;
 import org.jeuroute.gamecore.hud.Hud;
 import org.jeuroute.gamecore.hud.HudButton;
 import org.jeuroute.gamecore.preview.LinePreview;
-import org.jeuroute.manager.lignes.LineCreationController;
-import org.jeuroute.model.jouet.Depot;
-import org.jeuroute.model.jouet.Road;
-import org.jeuroute.model.jouet.RoadGraph;
-import org.jeuroute.model.jouet.Station;
-import org.jeuroute.model.jouet.TransitLine;
-import org.jeuroute.model.jouet.Vehicle;
+import org.jeuroute.manager.LineCreationController;
+import org.jeuroute.model.world.Depot;
+import org.jeuroute.model.world.Road;
+import org.jeuroute.model.world.RoadGraph;
+import org.jeuroute.model.world.Station;
+import org.jeuroute.model.world.TransitLine;
+import org.jeuroute.model.world.Vehicle;
 
 /**
  * Orchestre les collaborateurs principaux du jeu (graphe de routes,

@@ -1,8 +1,8 @@
-package org.jeuroute.model.jouet;
+package org.jeuroute.model.world;
 
 import java.awt.Point;
 import java.util.Objects;
-import org.jeuroute.model.interfaces.jouetpeau.ResourceBuildingPeau;
+import org.jeuroute.model.world.skin.ResourceBuildingSkin;
 
 public final class ResourceBuilding {
 
@@ -12,7 +12,7 @@ public final class ResourceBuilding {
 
 	private final Point position;
 	private final ResourceType resourceType;
-	private final ResourceBuildingPeau peau;
+	private final ResourceBuildingSkin skin;
 	private int stock;
 	private int receivedResourceStock;
 	private double elapsedSeconds;
@@ -21,7 +21,7 @@ public final class ResourceBuilding {
 	public ResourceBuilding(Point position, ResourceType resourceType) {
 		this.position = new Point(Objects.requireNonNull(position));
 		this.resourceType = Objects.requireNonNull(resourceType);
-		this.peau = new ResourceBuildingPeau(resourceType);
+		this.skin = new ResourceBuildingSkin(resourceType);
 	}
 
 	public Point getPosition() {
@@ -113,6 +113,6 @@ public final class ResourceBuilding {
 	public void display(double scale) {
 		Point start = new Point(position.x - HALF_SIZE, position.y - HALF_SIZE);
 		Point end = new Point(position.x + HALF_SIZE, position.y + HALF_SIZE);
-		peau.display(start, end, stock, getStorageCapacity(), scale);
+		skin.display(start, end, stock, getStorageCapacity(), scale);
 	}
 }

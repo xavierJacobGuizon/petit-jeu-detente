@@ -1,4 +1,4 @@
-package org.example;
+package org.jeuroute;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -28,16 +28,16 @@ import org.jeuroute.manager.HudManager;
 import org.jeuroute.manager.LineManager;
 import org.jeuroute.manager.MouseHandlerManager;
 import org.jeuroute.manager.VehicleManager;
-import org.jeuroute.model.configuration.HudIndicatorConfiguration;
-import org.jeuroute.model.configuration.MenuDefinition;
-import org.jeuroute.model.jouet.Depot;
-import org.jeuroute.model.jouet.Intersection;
-import org.jeuroute.model.jouet.Road;
-import org.jeuroute.model.jouet.RoadGraph;
-import org.jeuroute.model.jouet.RoadPath;
-import org.jeuroute.model.jouet.Station;
-import org.jeuroute.model.jouet.TransitLine;
-import org.jeuroute.model.jouet.Vehicle;
+import org.jeuroute.configuration.model.HudIndicatorConfiguration;
+import org.jeuroute.configuration.model.MenuDefinition;
+import org.jeuroute.model.world.Depot;
+import org.jeuroute.model.world.Intersection;
+import org.jeuroute.model.world.Road;
+import org.jeuroute.model.world.RoadGraph;
+import org.jeuroute.model.world.RoadPath;
+import org.jeuroute.model.world.Station;
+import org.jeuroute.model.world.TransitLine;
+import org.jeuroute.model.world.Vehicle;
 import org.junit.jupiter.api.Test;
 
 class AppTest {
@@ -1256,7 +1256,7 @@ class AppTest {
 		assertEquals("COULEUR LIGNE 1", hud.getDialog().getTitle());
 		assertTrue(hud.handleClick(640, 280, 1280, 720));
 
-		assertEquals(org.jeuroute.model.jouet.LineColor.CORAL, line.getColor());
+		assertEquals(org.jeuroute.model.world.LineColor.CORAL, line.getColor());
 	}
 
 	@Test

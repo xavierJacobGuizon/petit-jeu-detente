@@ -6,14 +6,14 @@ import java.awt.Point;
 import java.util.List;
 import org.jeuroute.gamecore.preview.LinePreview;
 import org.jeuroute.gamecore.preview.PlacementPreview;
-import org.jeuroute.model.interfaces.jouetpeau.StationPeau;
-import org.jeuroute.model.jouet.Depot;
-import org.jeuroute.model.jouet.Intersection;
-import org.jeuroute.model.jouet.ResourceBuilding;
-import org.jeuroute.model.jouet.Road;
-import org.jeuroute.model.jouet.Station;
-import org.jeuroute.model.jouet.TransitLine;
-import org.jeuroute.model.jouet.Vehicle;
+import org.jeuroute.model.world.skin.StationSkin;
+import org.jeuroute.model.world.Depot;
+import org.jeuroute.model.world.Intersection;
+import org.jeuroute.model.world.ResourceBuilding;
+import org.jeuroute.model.world.Road;
+import org.jeuroute.model.world.Station;
+import org.jeuroute.model.world.TransitLine;
+import org.jeuroute.model.world.Vehicle;
 
 public final class WorldRenderer {
 
@@ -98,7 +98,7 @@ public final class WorldRenderer {
 
 		Point position = preview.position();
 		if (preview.type() == PlacementPreview.Type.STATION) {
-			StationPeau.displayCaptureRadiusPreview(
+			StationSkin.displayCaptureRadiusPreview(
 				position,
 				Station.CAPTURE_RADIUS,
 				zoom,

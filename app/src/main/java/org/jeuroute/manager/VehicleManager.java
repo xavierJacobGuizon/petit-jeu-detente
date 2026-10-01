@@ -6,9 +6,9 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import org.jeuroute.gamecore.preview.PlacementPreview;
-import org.jeuroute.model.jouet.Road;
-import org.jeuroute.model.jouet.RoadGraph;
-import org.jeuroute.model.jouet.Vehicle;
+import org.jeuroute.model.world.Road;
+import org.jeuroute.model.world.RoadGraph;
+import org.jeuroute.model.world.Vehicle;
 
 public class VehicleManager {
 

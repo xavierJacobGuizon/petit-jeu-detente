@@ -1,9 +1,9 @@
-package org.jeuroute.model.jouet;
+package org.jeuroute.model.world;
 
 import java.awt.Point;
 import java.util.Objects;
-import org.jeuroute.model.interfaces.Peau;
-import org.jeuroute.model.interfaces.jouetpeau.DepotPeau;
+import org.jeuroute.model.world.skin.Skin;
+import org.jeuroute.model.world.skin.DepotSkin;
 
 public final class Depot {
 
@@ -13,7 +13,7 @@ public final class Depot {
 
 	private final Point position;
 	private final Point accessPosition;
-	private final Peau peau = new DepotPeau();
+	private final Skin skin = new DepotSkin();
 
 	public Depot(Point position) {
 		this(position, new Point(position.x, position.y + ACCESS_OFFSET));
@@ -37,10 +37,10 @@ public final class Depot {
 	}
 
 	public void display() {
-		peau.display(position, accessPosition);
+		skin.display(position, accessPosition);
 	}
 
 	public void display(double scale) {
-		peau.display(position, accessPosition, scale);
+		skin.display(position, accessPosition, scale);
 	}
 }

@@ -1,4 +1,4 @@
-package org.jeuroute.model.jouet;
+package org.jeuroute.model.world;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

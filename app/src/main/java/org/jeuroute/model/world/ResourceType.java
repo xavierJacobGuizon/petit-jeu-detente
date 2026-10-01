@@ -1,4 +1,4 @@
-package org.jeuroute.model.jouet;
+package org.jeuroute.model.world;
 
 public enum ResourceType {
 	FOOD("Nourriture", 'N', 8.0, 20, 0.24f, 0.72f, 0.34f),

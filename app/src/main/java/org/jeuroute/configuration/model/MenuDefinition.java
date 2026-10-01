@@ -1,4 +1,4 @@
-package org.jeuroute.model.configuration;
+package org.jeuroute.configuration.model;
 
 import java.util.List;
 import java.util.Objects;

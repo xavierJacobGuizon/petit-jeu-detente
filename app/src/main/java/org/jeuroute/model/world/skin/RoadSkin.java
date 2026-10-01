@@ -1,4 +1,4 @@
-package org.jeuroute.model.interfaces.jouetpeau;
+package org.jeuroute.model.world.skin;
 
 import static org.lwjgl.opengl.GL11.GL_LINES;
 import static org.lwjgl.opengl.GL11.glBegin;
@@ -8,15 +8,15 @@ import static org.lwjgl.opengl.GL11.glLineWidth;
 import static org.lwjgl.opengl.GL11.glVertex2d;
 
 import java.awt.Point;
-import org.jeuroute.model.interfaces.Peau;
+import org.jeuroute.model.world.skin.Skin;
 
-public class RoadPeau implements Peau {
+public class RoadSkin implements Skin {
 
 	private float r;
 	private float g;
 	private float b;
 
-	public RoadPeau(float r, float g, float b) {
+	public RoadSkin(float r, float g, float b) {
 		this.r = r;
 		this.g = g;
 		this.b = b;

@@ -1,18 +1,18 @@
-package org.jeuroute.model.interfaces.jouetpeau;
+package org.jeuroute.model.world.skin;
 
 import static org.lwjgl.opengl.GL11.*;
 
 import java.awt.Point;
-import org.jeuroute.model.interfaces.Peau;
-import org.jeuroute.model.jouet.ResourceType;
+import org.jeuroute.model.world.skin.Skin;
+import org.jeuroute.model.world.ResourceType;
 
-public class VehiclePeau implements Peau {
+public class VehicleSkin implements Skin {
 
 	private final float r;
 	private final float g;
 	private final float b;
 
-	public VehiclePeau(float r, float g, float b) {
+	public VehicleSkin(float r, float g, float b) {
 		this.r = r;
 		this.g = g;
 		this.b = b;

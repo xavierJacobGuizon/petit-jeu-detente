@@ -1,4 +1,4 @@
-package org.jeuroute.manager.lignes;
+package org.jeuroute.manager;
 
 import java.awt.Point;
 import java.util.ArrayList;
@@ -14,8 +14,8 @@ import org.jeuroute.manager.FixedEntityManager;
 import org.jeuroute.manager.GameManager;
 import org.jeuroute.manager.LineManager;
 import org.jeuroute.manager.MouseHandlerManager;
-import org.jeuroute.model.jouet.Station;
-import org.jeuroute.model.jouet.TransitLine;
+import org.jeuroute.model.world.Station;
+import org.jeuroute.model.world.TransitLine;
 
 /**
  * Gère le flux de création d'une nouvelle ligne : sélection des stations au

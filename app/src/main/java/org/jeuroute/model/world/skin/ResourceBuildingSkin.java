@@ -1,17 +1,17 @@
-package org.jeuroute.model.interfaces.jouetpeau;
+package org.jeuroute.model.world.skin;
 
 import static org.lwjgl.opengl.GL11.*;
 
 import java.awt.Point;
-import org.jeuroute.model.interfaces.Peau;
-import org.jeuroute.model.jouet.ResourceType;
+import org.jeuroute.model.world.skin.Skin;
+import org.jeuroute.model.world.ResourceType;
 import org.jeuroute.utils.CharUtils;
 
-public final class ResourceBuildingPeau implements Peau {
+public final class ResourceBuildingSkin implements Skin {
 
 	private final ResourceType resourceType;
 
-	public ResourceBuildingPeau(ResourceType resourceType) {
+	public ResourceBuildingSkin(ResourceType resourceType) {
 		this.resourceType = resourceType;
 	}
 

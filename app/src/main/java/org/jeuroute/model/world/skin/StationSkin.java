@@ -1,14 +1,14 @@
-package org.jeuroute.model.interfaces.jouetpeau;
+package org.jeuroute.model.world.skin;
 
 import static org.lwjgl.opengl.GL11.*;
 
 import java.awt.Point;
 import java.util.Map;
-import org.jeuroute.model.interfaces.Peau;
-import org.jeuroute.model.jouet.ResourceType;
+import org.jeuroute.model.world.skin.Skin;
+import org.jeuroute.model.world.ResourceType;
 import org.jeuroute.utils.CharUtils;
 
-public final class StationPeau implements Peau {
+public final class StationSkin implements Skin {
 
 	@Override
 	public void display(Point position, Point unused) {

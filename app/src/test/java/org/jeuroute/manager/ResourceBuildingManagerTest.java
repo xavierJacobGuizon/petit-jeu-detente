@@ -9,11 +9,11 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import org.jeuroute.model.jouet.Depot;
-import org.jeuroute.model.jouet.ResourceBuilding;
-import org.jeuroute.model.jouet.ResourceType;
-import org.jeuroute.model.jouet.RoadGraph;
-import org.jeuroute.model.jouet.Station;
+import org.jeuroute.model.world.Depot;
+import org.jeuroute.model.world.ResourceBuilding;
+import org.jeuroute.model.world.ResourceType;
+import org.jeuroute.model.world.RoadGraph;
+import org.jeuroute.model.world.Station;
 import org.junit.jupiter.api.Test;
 
 class ResourceBuildingManagerTest {

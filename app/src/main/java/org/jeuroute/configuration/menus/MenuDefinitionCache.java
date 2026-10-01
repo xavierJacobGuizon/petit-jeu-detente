@@ -2,7 +2,7 @@ package org.jeuroute.configuration.menus;
 
 import java.util.List;
 import org.jeuroute.configuration.XmlResourceCache;
-import org.jeuroute.model.configuration.MenuDefinition;
+import org.jeuroute.configuration.model.MenuDefinition;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;

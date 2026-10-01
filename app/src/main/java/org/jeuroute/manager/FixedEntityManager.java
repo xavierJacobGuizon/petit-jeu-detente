@@ -7,10 +7,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.jeuroute.gamecore.preview.PlacementPreview;
-import org.jeuroute.model.jouet.Depot;
-import org.jeuroute.model.jouet.Intersection;
-import org.jeuroute.model.jouet.RoadGraph;
-import org.jeuroute.model.jouet.Station;
+import org.jeuroute.model.world.Depot;
+import org.jeuroute.model.world.Intersection;
+import org.jeuroute.model.world.RoadGraph;
+import org.jeuroute.model.world.Station;
 
 public final class FixedEntityManager {
 

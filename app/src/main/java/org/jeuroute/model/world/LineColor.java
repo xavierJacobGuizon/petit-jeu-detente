@@ -1,4 +1,4 @@
-package org.jeuroute.model.jouet;
+package org.jeuroute.model.world;
 
 import java.awt.Color;
 

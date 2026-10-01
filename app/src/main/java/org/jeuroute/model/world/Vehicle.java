@@ -1,9 +1,9 @@
-package org.jeuroute.model.jouet;
+package org.jeuroute.model.world;
 
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
-import org.jeuroute.model.interfaces.jouetpeau.VehiclePeau;
+import org.jeuroute.model.world.skin.VehicleSkin;
 import org.jeuroute.utils.GeometryUtils;
 
 public class Vehicle {
@@ -16,7 +16,7 @@ public class Vehicle {
 	private static final double SIMULATION_STEP_SECONDS = 1.0 / 60.0;
 	private static final double DISTANCE_EPSILON = 0.000001;
 
-	private final VehiclePeau vehiclePeau;
+	private final VehicleSkin vehicleSkin;
 
 	private final double size;
 	public final double halfSize;
@@ -116,7 +116,7 @@ public class Vehicle {
 
 		this.synchronizedGraphVersion = roadGraph.getVersion();
 
-		vehiclePeau = new VehiclePeau(1.0f, 0.35f, 0.15f);
+		vehicleSkin = new VehicleSkin(1.0f, 0.35f, 0.15f);
 		// 0.75f, 0.30f, 0.85f
 	}
 
@@ -282,13 +282,13 @@ public class Vehicle {
 	public void display() {
 		Point start = GeometryUtils.rectangleStart(this, this.position);
 		Point end = GeometryUtils.rectangleEnd(this, this.position);
-		vehiclePeau.display(start, end, cargoAmount, cargoType, 1.0);
+		vehicleSkin.display(start, end, cargoAmount, cargoType, 1.0);
 	}
 
 	public void display(double scale) {
 		Point start = GeometryUtils.rectangleStart(this, this.position);
 		Point end = GeometryUtils.rectangleEnd(this, this.position);
-		vehiclePeau.display(start, end, cargoAmount, cargoType, scale);
+		vehicleSkin.display(start, end, cargoAmount, cargoType, scale);
 	}
 
 	/**

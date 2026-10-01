@@ -1,12 +1,12 @@
-package org.jeuroute.model.jouet;
+package org.jeuroute.model.world;
 
 import java.awt.Point;
-import org.jeuroute.model.interfaces.Peau;
-import org.jeuroute.model.interfaces.jouetpeau.RoadPeau;
+import org.jeuroute.model.world.skin.Skin;
+import org.jeuroute.model.world.skin.RoadSkin;
 
 public class Road {
 
-	private final Peau roadPeau;
+	private final Skin roadSkin;
 
 	private final Point start;
 	private final Point end;
@@ -19,7 +19,7 @@ public class Road {
 		this.start = snapToGrid ? RoadGraph.snapPoint(start) : new Point(start);
 		this.end = snapToGrid ? RoadGraph.snapPoint(end) : new Point(end);
 
-		roadPeau = new RoadPeau(1.0f, 0.5f, 0.3f);
+		roadSkin = new RoadSkin(1.0f, 0.5f, 0.3f);
 	}
 
 	public static Road createSegment(Point start, Point end) {
@@ -118,10 +118,10 @@ public class Road {
 	}
 
 	public void display() {
-		roadPeau.display(this.getStart(), this.getEnd());
+		roadSkin.display(this.getStart(), this.getEnd());
 	}
 
 	public void display(double scale) {
-		roadPeau.display(this.getStart(), this.getEnd(), scale);
+		roadSkin.display(this.getStart(), this.getEnd(), scale);
 	}
 }

@@ -1,4 +1,4 @@
-package org.jeuroute.model.jouet;
+package org.jeuroute.model.world;
 
 import java.awt.Point;
 import java.util.ArrayList;
@@ -7,14 +7,14 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.jeuroute.model.interfaces.jouetpeau.StationPeau;
+import org.jeuroute.model.world.skin.StationSkin;
 
 public final class Station {
 
 	public static final double CAPTURE_RADIUS = 180.0;
 
 	private final Point position;
-	private final StationPeau peau = new StationPeau();
+	private final StationSkin skin = new StationSkin();
 	private final List<Road> roads = new ArrayList<>();
 	private final List<Road> roadsView = Collections.unmodifiableList(roads);
 	private final List<ResourceBuilding> capturedBuildings = new ArrayList<>();
@@ -135,9 +135,9 @@ public final class Station {
 	}
 
 	public void display() {
-		peau.displayCaptureRadius(position, CAPTURE_RADIUS, 1.0);
-		peau.display(position, null);
-		peau.displayCapturedResources(
+		skin.displayCaptureRadius(position, CAPTURE_RADIUS, 1.0);
+		skin.display(position, null);
+		skin.displayCapturedResources(
 			position,
 			getCapturedResourceStocks(),
 			getCapturedResourceDemand()
@@ -145,9 +145,9 @@ public final class Station {
 	}
 
 	public void display(double scale) {
-		peau.displayCaptureRadius(position, CAPTURE_RADIUS, scale);
-		peau.display(position, null, scale);
-		peau.displayCapturedResources(
+		skin.displayCaptureRadius(position, CAPTURE_RADIUS, scale);
+		skin.display(position, null, scale);
+		skin.displayCapturedResources(
 			position,
 			getCapturedResourceStocks(),
 			getCapturedResourceDemand()

@@ -1,25 +1,25 @@
-package org.jeuroute.model.jouet;
+package org.jeuroute.model.world;
 
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.jeuroute.model.interfaces.Peau;
-import org.jeuroute.model.interfaces.jouetpeau.IntersectionPeau;
+import org.jeuroute.model.world.skin.Skin;
+import org.jeuroute.model.world.skin.IntersectionSkin;
 
 public class Intersection {
 
 	private static final double EPSILON = 0.000001;
 	private static final double FULL_TURN_DEGREES = 360.0;
 
-	private final Peau intersectionPeau;
+	private final Skin intersectionSkin;
 
 	private final Point position;
 	private final List<Road> roads = new ArrayList<>();
 
 	public Intersection(Point position) {
 		this.position = new Point(position);
-		this.intersectionPeau = new IntersectionPeau(0.0f, 0.0f, 1.0f);
+		this.intersectionSkin = new IntersectionSkin(0.0f, 0.0f, 1.0f);
 	}
 
 	public Point getPosition() {
@@ -99,10 +99,10 @@ public class Intersection {
 	}
 
 	public void display() {
-		intersectionPeau.display(this.getPosition(), null);
+		intersectionSkin.display(this.getPosition(), null);
 	}
 
 	public void display(double scale) {
-		intersectionPeau.display(this.getPosition(), null, scale);
+		intersectionSkin.display(this.getPosition(), null, scale);
 	}
 }
