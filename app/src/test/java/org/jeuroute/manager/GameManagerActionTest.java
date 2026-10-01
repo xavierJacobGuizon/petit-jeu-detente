@@ -12,7 +12,7 @@ class GameManagerActionTest {
 
 	@Test
 	void cancellingLineCreationClearsModeAndValidationButton() {
-		GameManager gameManager = new GameManager();
+		GameManager gameManager = new GameManager(new java.util.Random(42));
 		Hud hud = gameManager.getHud();
 		assertTrue(hud.handleClick(1020, 685, 1280, 720));
 		assertTrue(hud.handleClick(1020, 639, 1280, 720));
@@ -29,7 +29,7 @@ class GameManagerActionTest {
 
 	@Test
 	void cancellingPlacementClearsPendingVehicleClick() {
-		GameManager gameManager = new GameManager();
+		GameManager gameManager = new GameManager(new java.util.Random(42));
 		MouseHandler mouseHandler = gameManager.getMouseHandlerManager().getMouseHandler();
 		mouseHandler.setVehicleCreationEnabled(true);
 		mouseHandler.onVehiclePlacement(250, 200);

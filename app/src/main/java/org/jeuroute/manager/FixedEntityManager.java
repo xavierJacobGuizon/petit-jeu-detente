@@ -18,16 +18,26 @@ public final class FixedEntityManager {
 	private final List<Station> stations = new ArrayList<>();
 	private final List<Depot> depots = new ArrayList<>();
 	private final List<Intersection> intersections = new ArrayList<>();
+	private final RoadGraph roadGraph;
 	private final List<Station> stationsView = Collections.unmodifiableList(stations);
 	private final List<Depot> depotsView = Collections.unmodifiableList(depots);
 	private final List<Intersection> intersectionsView = Collections.unmodifiableList(
 		intersections
 	);
 
-	public FixedEntityManager() {}
+	public FixedEntityManager() {
+		this(null);
+	}
+
+	public FixedEntityManager(RoadGraph roadGraph) {
+		this.roadGraph = roadGraph;
+	}
 
 	public Station createStation(Point position) {
 		Point snappedPosition = RoadGraph.snapPoint(position);
+		if (!isLandPosition(snappedPosition)) {
+			throw new IllegalArgumentException("Stations must be placed on land");
+		}
 		Station existingStation = getStationAt(snappedPosition);
 		if (existingStation != null) {
 			return existingStation;
@@ -43,12 +53,15 @@ public final class FixedEntityManager {
 		return new PlacementPreview(
 			PlacementPreviewType.STATION,
 			snappedPosition,
-			getStationAt(snappedPosition) == null
+			isLandPosition(snappedPosition) && getStationAt(snappedPosition) == null
 		);
 	}
 
 	public Depot createDepot(Point position) {
 		Point snappedPosition = RoadGraph.snapPoint(position);
+		if (!getDepotPlacementPreview(snappedPosition).valid()) {
+			throw new IllegalArgumentException("Depots must be placed on available land");
+		}
 		Depot existingDepot = getDepotAt(snappedPosition);
 		if (existingDepot != null) {
 			return existingDepot;
@@ -60,11 +73,22 @@ public final class FixedEntityManager {
 
 	public PlacementPreview getDepotPlacementPreview(Point position) {
 		Point snappedPosition = RoadGraph.snapPoint(position);
+		Point accessPosition = new Point(
+			snappedPosition.x,
+			snappedPosition.y + Depot.ACCESS_OFFSET
+		);
+		Point roadEndPosition = new Point(
+			accessPosition.x,
+			accessPosition.y + Depot.ROAD_STUB_LENGTH
+		);
 		boolean inBounds =
-			snappedPosition.x >= Depot.HALF_SIZE &&
-			snappedPosition.x <= 1280 - Depot.HALF_SIZE &&
-			snappedPosition.y >= Depot.HALF_SIZE &&
-			snappedPosition.y <= 720 - Depot.ACCESS_OFFSET - Depot.ROAD_STUB_LENGTH;
+			roadGraph == null
+				? snappedPosition.x >= Depot.HALF_SIZE &&
+					snappedPosition.x <= 1280 - Depot.HALF_SIZE &&
+					snappedPosition.y >= Depot.HALF_SIZE &&
+					snappedPosition.y <= 720 - Depot.ACCESS_OFFSET - Depot.ROAD_STUB_LENGTH
+				: roadGraph.isLandPosition(snappedPosition) &&
+					roadGraph.isLandSegment(accessPosition, roadEndPosition);
 		boolean unoccupied = depots
 			.stream()
 			.noneMatch(
@@ -75,6 +99,10 @@ public final class FixedEntityManager {
 			snappedPosition,
 			inBounds && unoccupied
 		);
+	}
+
+	private boolean isLandPosition(Point position) {
+		return roadGraph == null || roadGraph.isLandPosition(position);
 	}
 
 	public List<Station> getStations() {

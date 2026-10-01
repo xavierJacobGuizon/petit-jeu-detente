@@ -63,13 +63,14 @@ public class App {
 	 * vehicles, and any drag lines created by the mouse handler.
 	 */
 	private void render() {
-		glClearColor(0.07f, 0.09f, 0.12f, 1.0f);
+		glClearColor(0.035f, 0.16f, 0.23f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		glPushMatrix();
 		camera.apply(window.getWidth(), window.getHeight());
 
+		WorldRenderer.renderTerrain(gameManager.getWorldMap().getTerrainMap(), camera.getZoom());
 		WorldRenderer.renderRoads(gameManager.getRoadGraph().getRoads(), camera.getZoom());
 		WorldRenderer.renderResourceBuildings(
 			gameManager.getWorldMap().getResourceBuildingManager().getBuildings(),

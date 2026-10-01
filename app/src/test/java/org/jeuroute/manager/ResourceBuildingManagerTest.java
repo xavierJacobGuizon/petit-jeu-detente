@@ -9,46 +9,36 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import org.jeuroute.model.world.transport.Depot;
-import org.jeuroute.model.world.resources.ResourceBuilding;
 import org.jeuroute.model.world.enums.ResourceType;
 import org.jeuroute.model.world.network.RoadGraph;
+import org.jeuroute.model.world.resources.ResourceBuilding;
+import org.jeuroute.model.world.terrain.TerrainMap;
+import org.jeuroute.model.world.transport.Depot;
 import org.jeuroute.model.world.transport.Station;
 import org.junit.jupiter.api.Test;
 
 class ResourceBuildingManagerTest {
 
 	@Test
-	void initialBuildingsAreUniqueInsideTheLargerSpawnArea() {
-		ResourceBuildingManager manager = new ResourceBuildingManager(new Random(42));
-		RoadGraph graph = new RoadGraph();
-		graph.createRoad(new Point(50, 360), new Point(123, 360));
-		graph.createRoad(new Point(50, 520), new Point(123, 520));
-		graph.createRoad(new Point(125, 350), new Point(125, 525));
-		Depot depot = new Depot(new Point(75, 275));
-		graph.createRoad(depot.getAccessPosition(), depot.getRoadEndPosition());
-		manager.generateInitialBuildings(graph, List.of(depot));
+	void generatedBuildingsStayOnLandAndConnectToTheRoadNetwork() {
+		WorldMap worldMap = new WorldMap(new Random(42));
+		Depot depot = worldMap.initializeDefaultLayout();
+		ResourceBuildingManager manager = worldMap.getResourceBuildingManager();
+		RoadGraph graph = worldMap.getRoadGraph();
+		TerrainMap terrain = worldMap.getTerrainMap();
 
 		assertEquals(ResourceBuildingManager.INITIAL_BUILDING_COUNT, manager.getBuildings().size());
 		EnumSet<ResourceType> generatedResourceTypes = EnumSet.noneOf(ResourceType.class);
 		for (int first = 0; first < manager.getBuildings().size(); first++) {
-			generatedResourceTypes.add(manager.getBuildings().get(first).getResourceType());
-			Point position = manager.getBuildings().get(first).getPosition();
+			ResourceBuilding building = manager.getBuildings().get(first);
+			generatedResourceTypes.add(building.getResourceType());
+			Point position = building.getPosition();
+			assertTrue(terrain.isLand(position));
+			assertTrue(graph.findRoadNear(position, ResourceBuilding.HALF_SIZE - 1.0) == null);
+			assertTrue(terrain.isLand(building.getAccessPosition()));
 			assertTrue(
-				position.x >=
-					ResourceBuildingManager.INITIAL_VIEW_CENTER_X -
-						ResourceBuildingManager.SPAWN_AREA_WIDTH / 2 +
-						ResourceBuilding.HALF_SIZE
+				graph.findPath(building.getAccessPosition(), depot.getRoadEndPosition()).isPresent()
 			);
-			assertTrue(
-				position.x <=
-					ResourceBuildingManager.INITIAL_VIEW_CENTER_X +
-						ResourceBuildingManager.SPAWN_AREA_WIDTH / 2 -
-						ResourceBuilding.HALF_SIZE
-			);
-			assertTrue(position.y >= ResourceBuildingManager.INITIAL_VIEW_CENTER_Y - 516);
-			assertTrue(position.y <= ResourceBuildingManager.INITIAL_VIEW_CENTER_Y + 516);
-			assertTrue(graph.findRoadNear(position, ResourceBuilding.HALF_SIZE + 12.0) == null);
 			assertTrue(
 				position.distance(depot.getPosition()) >=
 					ResourceBuilding.HALF_SIZE + Depot.HALF_SIZE + 40
@@ -66,7 +56,7 @@ class ResourceBuildingManagerTest {
 
 	@Test
 	void gameManagerProducesResourcesForItsInitialBuildings() {
-		GameManager gameManager = new GameManager();
+		GameManager gameManager = new GameManager(new java.util.Random(42));
 		List<ResourceBuilding> buildings = gameManager.getResourceBuildingManager().getBuildings();
 		assertEquals(ResourceBuildingManager.INITIAL_BUILDING_COUNT, buildings.size());
 

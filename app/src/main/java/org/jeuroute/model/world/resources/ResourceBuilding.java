@@ -12,6 +12,7 @@ public final class ResourceBuilding {
 	public static final double INPUT_CONSUMPTION_INTERVAL_SECONDS = 10.0;
 
 	private final Point position;
+	private final Point accessPosition;
 	private final ResourceType resourceType;
 	private final ResourceBuildingSkin skin;
 	private int stock;
@@ -20,13 +21,22 @@ public final class ResourceBuilding {
 	private double inputConsumptionElapsedSeconds;
 
 	public ResourceBuilding(Point position, ResourceType resourceType) {
+		this(position, resourceType, position);
+	}
+
+	public ResourceBuilding(Point position, ResourceType resourceType, Point accessPosition) {
 		this.position = new Point(Objects.requireNonNull(position));
+		this.accessPosition = new Point(Objects.requireNonNull(accessPosition));
 		this.resourceType = Objects.requireNonNull(resourceType);
 		this.skin = new ResourceBuildingSkin(resourceType);
 	}
 
 	public Point getPosition() {
 		return new Point(position);
+	}
+
+	public Point getAccessPosition() {
+		return new Point(accessPosition);
 	}
 
 	public ResourceType getResourceType() {

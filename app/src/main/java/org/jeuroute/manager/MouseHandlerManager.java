@@ -136,6 +136,9 @@ public class MouseHandlerManager {
 		if (position == null) {
 			return;
 		}
+		if (!fixedEntityManager.getStationPlacementPreview(position).valid()) {
+			return;
+		}
 		Station station = fixedEntityManager.createStation(position);
 		graph.addStationNode(station.getPosition());
 	}

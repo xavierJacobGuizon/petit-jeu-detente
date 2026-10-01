@@ -1,13 +1,19 @@
 package org.jeuroute.manager;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.awt.Point;
 import java.util.EnumSet;
-import org.jeuroute.model.world.transport.Depot;
-import org.jeuroute.model.world.resources.ResourceBuilding;
+import java.util.List;
+import java.util.Random;
 import org.jeuroute.model.world.enums.ResourceType;
+import org.jeuroute.model.world.network.Road;
+import org.jeuroute.model.world.resources.ResourceBuilding;
+import org.jeuroute.model.world.terrain.TerrainMap;
+import org.jeuroute.model.world.transport.Depot;
 import org.junit.jupiter.api.Test;
 
 class WorldMapTest {
@@ -38,7 +44,7 @@ class WorldMapTest {
 
 	@Test
 	void gameManagerAccessorsDelegateToItsWorldMap() {
-		GameManager gameManager = new GameManager();
+		GameManager gameManager = new GameManager(new java.util.Random(42));
 
 		assertSame(gameManager.getWorldMap().getRoadGraph(), gameManager.getRoadGraph());
 		assertSame(
@@ -49,5 +55,63 @@ class WorldMapTest {
 			gameManager.getWorldMap().getResourceBuildingManager(),
 			gameManager.getResourceBuildingManager()
 		);
+	}
+
+	@Test
+	void seededIslandHasAConnectedRoadNetworkAndBuildingAccesses() {
+		WorldMap firstMap = new WorldMap(new Random(91));
+		Depot depot = firstMap.initializeDefaultLayout();
+		WorldMap secondMap = new WorldMap(new Random(91));
+		secondMap.initializeDefaultLayout();
+
+		List<List<Point>> firstRoads = roadEndpoints(firstMap);
+		assertEquals(firstRoads, roadEndpoints(secondMap));
+		assertEquals(
+			firstMap
+				.getResourceBuildingManager()
+				.getBuildings()
+				.stream()
+				.map(ResourceBuilding::getPosition)
+				.toList(),
+			secondMap
+				.getResourceBuildingManager()
+				.getBuildings()
+				.stream()
+				.map(ResourceBuilding::getPosition)
+				.toList()
+		);
+
+		Point networkStart = depot.getRoadEndPosition();
+		for (Road road : firstMap.getRoadGraph().getRoads()) {
+			assertTrue(firstMap.getTerrainMap().containsSegment(road.getStart(), road.getEnd()));
+			assertTrue(firstMap.getRoadGraph().findPath(networkStart, road.getStart()).isPresent());
+		}
+		for (ResourceBuilding building : firstMap.getResourceBuildingManager().getBuildings()) {
+			assertTrue(
+				firstMap
+					.getRoadGraph()
+					.findPath(networkStart, building.getAccessPosition())
+					.isPresent()
+			);
+		}
+	}
+
+	@Test
+	void fixedEntityPlacementPreviewsRejectWater() {
+		WorldMap worldMap = new WorldMap(new Random(17));
+		worldMap.initializeDefaultLayout();
+		Point water = new Point(TerrainMap.ORIGIN_X, TerrainMap.ORIGIN_Y);
+
+		assertFalse(worldMap.getFixedEntityManager().getStationPlacementPreview(water).valid());
+		assertFalse(worldMap.getFixedEntityManager().getDepotPlacementPreview(water).valid());
+	}
+
+	private static List<List<Point>> roadEndpoints(WorldMap worldMap) {
+		return worldMap
+			.getRoadGraph()
+			.getRoads()
+			.stream()
+			.map(road -> List.of(road.getStart(), road.getEnd()))
+			.toList();
 	}
 }

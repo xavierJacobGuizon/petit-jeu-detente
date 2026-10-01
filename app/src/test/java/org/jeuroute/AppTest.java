@@ -118,7 +118,7 @@ class AppTest {
 
 	@Test
 	void routesMenuOffersBidirectionalAndUnimplementedOneWayOptions() {
-		GameManager game = new GameManager();
+		GameManager game = new GameManager(new java.util.Random(42));
 		Hud hud = game.getHud();
 		MouseHandler mouseHandler = game.getMouseHandlerManager().getMouseHandler();
 
@@ -168,7 +168,7 @@ class AppTest {
 
 	@Test
 	void indicatorsCanBeRegisteredRetrievedAndDisplayedById() {
-		HudManager hudManager = new GameManager().getHudManager();
+		HudManager hudManager = new GameManager(new java.util.Random(42)).getHudManager();
 		AtomicInteger value = new AtomicInteger(4);
 		HudIndicator indicator = new HudIndicator(
 			"CUSTOM",
@@ -238,7 +238,7 @@ class AppTest {
 
 	@Test
 	void hudManagerOwnsDefaultDataAndAllowsAddingSlots() {
-		GameManager game = new GameManager();
+		GameManager game = new GameManager(new java.util.Random(42));
 		RoadGraph hudGraph = game.getRoadGraph();
 		HudManager hudManager = game.getHudManager();
 		hudGraph.createRoad(new Point(0, 75), new Point(200, 75));
@@ -317,10 +317,10 @@ class AppTest {
 
 	@Test
 	void gameManagerInitializesAnIsolatedGameWorld() {
-		GameManager firstGame = new GameManager();
-		GameManager secondGame = new GameManager();
+		GameManager firstGame = new GameManager(new java.util.Random(42));
+		GameManager secondGame = new GameManager(new java.util.Random(42));
 
-		assertEquals(6, firstGame.getRoadGraph().getRoads().size());
+		assertTrue(firstGame.getRoadGraph().getRoads().size() > 6);
 		assertEquals(1, firstGame.getDepots().size());
 		assertEquals(3, firstGame.getVehicleManager().getVehicles().size());
 		assertNotSame(firstGame.getRoadGraph(), secondGame.getRoadGraph());
@@ -330,20 +330,43 @@ class AppTest {
 
 	@Test
 	void gameManagerVehiclesParkAtTheDepotWhenTheyHaveNoLine() {
-		GameManager game = new GameManager();
-		for (int frame = 0; frame < 3; frame++) {
+		GameManager game = new GameManager(new java.util.Random(42));
+		for (Vehicle vehicle : game.getVehicleManager().getVehicles()) {
+			if (vehicle.getRoad() != null) {
+				assertTrue(
+					game
+						.getRoadGraph()
+						.findPathFromRoadPosition(
+							vehicle.getPosition(),
+							vehicle.getRoad(),
+							game.getDepot().getAccessPosition()
+						)
+						.isPresent()
+				);
+			}
+		}
+		for (
+			int frame = 0;
+			frame < 30 &&
+			game
+				.getVehicleManager()
+				.getVehicles()
+				.stream()
+				.anyMatch(vehicle -> !vehicle.isParkedAtDepot());
+			frame++
+		) {
 			game.update(1.0);
 		}
 
 		for (Vehicle vehicle : game.getVehicleManager().getVehicles()) {
-			assertEquals(game.getDepot().getAccessPosition(), vehicle.getPosition());
 			assertTrue(vehicle.isParkedAtDepot());
+			assertEquals(game.getDepot().getAccessPosition(), vehicle.getPosition());
 		}
 	}
 
 	@Test
 	void selectedRouteHighlightsIntersectionAndRouteEndpointsWithinSnapRange() {
-		GameManager game = new GameManager();
+		GameManager game = new GameManager(new java.util.Random(42));
 		RoadGraph roadGraph = game.getRoadGraph();
 		roadGraph.createRoad(new Point(200, 200), new Point(400, 200));
 		roadGraph.createRoad(new Point(300, 100), new Point(300, 300));
@@ -373,20 +396,25 @@ class AppTest {
 
 	@Test
 	void routePreviewShowsEveryIntersectionItWillCreate() {
-		GameManager game = new GameManager();
-		RoadGraph roadGraph = game.getRoadGraph();
+		RoadGraph roadGraph = new RoadGraph();
+		MouseHandler mouseHandler = new MouseHandler();
+		MouseHandlerManager mouseHandlerManager = new MouseHandlerManager(
+			roadGraph,
+			mouseHandler,
+			new VehicleManager(roadGraph),
+			new FixedEntityManager(),
+			station -> {}
+		);
 		roadGraph.createRoad(new Point(150, 100), new Point(150, 300));
 		roadGraph.createRoad(new Point(250, 100), new Point(250, 300));
-		game.update(0.0);
-		MouseHandler mouseHandler = game.getMouseHandlerManager().getMouseHandler();
 		mouseHandler.setRouteCreationEnabled(true);
 		mouseHandler.onRoutePlacement(100, 200);
 		mouseHandler.onMove(300, 200);
 
-		assertEquals(
-			List.of(new Point(150, 200), new Point(250, 200)),
-			game.getMouseHandlerManager().getFutureRouteIntersections()
-		);
+		List<Point> futureIntersections = mouseHandlerManager.getFutureRouteIntersections();
+		assertEquals(2, futureIntersections.size());
+		assertTrue(futureIntersections.contains(new Point(150, 200)));
+		assertTrue(futureIntersections.contains(new Point(250, 200)));
 		assertEquals(
 			List.of(
 				List.of(new Point(100, 200), new Point(150, 200)),
@@ -401,7 +429,7 @@ class AppTest {
 
 	@Test
 	void depotCanBePlacedFromHudAndUsedByUnassignedVehicles() {
-		GameManager game = new GameManager();
+		GameManager game = new GameManager(new java.util.Random(42));
 		Hud hud = game.getHud();
 		MouseHandler mouseHandler = game.getMouseHandlerManager().getMouseHandler();
 
@@ -454,7 +482,7 @@ class AppTest {
 
 	@Test
 	void gameManagerOwnsDepositsPlacedDuringGameUpdates() {
-		GameManager game = new GameManager();
+		GameManager game = new GameManager(new java.util.Random(42));
 		game.getMouseHandlerManager().getMouseHandler().setStationCreationEnabled(true);
 		game.getMouseHandlerManager().getMouseHandler().onStationPlacement(401, 299);
 
@@ -616,7 +644,7 @@ class AppTest {
 
 	@Test
 	void lineCreationPreviewConnectsSelectedStationToMouse() {
-		GameManager game = new GameManager();
+		GameManager game = new GameManager(new java.util.Random(42));
 		Station startStation = game.getFixedEntityManager().createStation(new Point(100, 100));
 		Station middleStation = game.getFixedEntityManager().createStation(new Point(200, 100));
 		game.getRoadGraph().createRoad(startStation.getPosition(), middleStation.getPosition());
@@ -641,7 +669,7 @@ class AppTest {
 
 	@Test
 	void linePreviewColorStateReflectsHoveredStationConnectivity() {
-		GameManager game = new GameManager();
+		GameManager game = new GameManager(new java.util.Random(42));
 		Station start = game.getFixedEntityManager().createStation(new Point(100, 100));
 		Station reachable = game.getFixedEntityManager().createStation(new Point(200, 100));
 		Station isolated = game.getFixedEntityManager().createStation(new Point(100, 300));
@@ -699,7 +727,7 @@ class AppTest {
 
 	@Test
 	void choosingAnotherModeCancelsLineCreationAndClearsItsPreview() {
-		GameManager game = new GameManager();
+		GameManager game = new GameManager(new java.util.Random(42));
 		Station station = game.getFixedEntityManager().createStation(new Point(100, 100));
 		game.getRoadGraph().addStationNode(station.getPosition());
 		game.update(0.0);
@@ -724,7 +752,7 @@ class AppTest {
 
 	@Test
 	void pendingLineStationClickIsIgnoredAfterSwitchingModes() {
-		GameManager game = new GameManager();
+		GameManager game = new GameManager(new java.util.Random(42));
 		Station station = game.getFixedEntityManager().createStation(new Point(100, 100));
 		game.getRoadGraph().addStationNode(station.getPosition());
 		game.update(0.0);
@@ -799,7 +827,7 @@ class AppTest {
 
 	@Test
 	void routeDragHighlightsAnExistingIntersectionWhenItsSnapPointMatches() {
-		GameManager game = new GameManager();
+		GameManager game = new GameManager(new java.util.Random(42));
 		RoadGraph roadGraph = game.getRoadGraph();
 		roadGraph.createRoad(new Point(200, 200), new Point(400, 200));
 		roadGraph.createRoad(new Point(300, 100), new Point(300, 300));
@@ -887,7 +915,7 @@ class AppTest {
 
 	@Test
 	void lineCreationRejectsUnreachableStationAndKeepsTheLastReachableStation() {
-		GameManager game = new GameManager();
+		GameManager game = new GameManager(new java.util.Random(42));
 		Station first = game.getFixedEntityManager().createStation(new Point(100, 100));
 		Station reachable = game.getFixedEntityManager().createStation(new Point(200, 100));
 		Station unreachable = game.getFixedEntityManager().createStation(new Point(100, 300));
@@ -948,7 +976,7 @@ class AppTest {
 
 	@Test
 	void addingRoadRecalculatesEverySegmentOfAnExistingLine() {
-		GameManager game = new GameManager();
+		GameManager game = new GameManager(new java.util.Random(42));
 		Station first = game.getFixedEntityManager().createStation(new Point(100, 100));
 		Station middle = game.getFixedEntityManager().createStation(new Point(200, 100));
 		Station last = game.getFixedEntityManager().createStation(new Point(300, 100));
@@ -1139,9 +1167,9 @@ class AppTest {
 
 	@Test
 	void hudCanCreateLineAssignVehicleAndRunItBackAndForth() {
-		GameManager game = new GameManager();
-		Station startStation = game.getFixedEntityManager().createStation(new Point(50, 350));
-		Station endStation = game.getFixedEntityManager().createStation(new Point(125, 350));
+		GameManager game = new GameManager(new java.util.Random(42));
+		Station startStation = game.getFixedEntityManager().createStation(new Point(50, 375));
+		Station endStation = game.getFixedEntityManager().createStation(new Point(125, 375));
 		game.getRoadGraph().addStationNode(startStation.getPosition());
 		game.getRoadGraph().addStationNode(endStation.getPosition());
 		game.update(0.0);
@@ -1151,9 +1179,9 @@ class AppTest {
 		assertTrue(hud.handleClick(1020, 685, 1280, 720));
 		assertTrue(hud.handleClick(1020, 639, 1280, 720));
 		assertEquals("VALIDER", hud.getOneShotActionButton().getLabel());
-		game.getMouseHandlerManager().getMouseHandler().onLineStationSelection(50, 350);
+		game.getMouseHandlerManager().getMouseHandler().onLineStationSelection(50, 375);
 		game.update(0.0);
-		game.getMouseHandlerManager().getMouseHandler().onLineStationSelection(125, 350);
+		game.getMouseHandlerManager().getMouseHandler().onLineStationSelection(125, 375);
 		game.update(0.0);
 		assertEquals(0, game.getLineManager().getLines().size());
 		assertTrue(hud.handleClick(700, 685, 1280, 720));
@@ -1187,7 +1215,7 @@ class AppTest {
 
 	@Test
 	void hudValidatesLineAfterSelectingSeveralStations() {
-		GameManager game = new GameManager();
+		GameManager game = new GameManager(new java.util.Random(42));
 		Station start = game.getFixedEntityManager().createStation(new Point(50, 350));
 		Station middle = game.getFixedEntityManager().createStation(new Point(100, 350));
 		Station end = game.getFixedEntityManager().createStation(new Point(150, 350));
@@ -1221,7 +1249,7 @@ class AppTest {
 
 	@Test
 	void vehicleListShowsStableNumbersAllowsRemovalAndLineColorChanges() {
-		GameManager game = new GameManager();
+		GameManager game = new GameManager(new java.util.Random(42));
 		Station start = game.getFixedEntityManager().createStation(new Point(50, 350));
 		Station end = game.getFixedEntityManager().createStation(new Point(150, 350));
 		game.getRoadGraph().createRoad(start.getPosition(), end.getPosition());

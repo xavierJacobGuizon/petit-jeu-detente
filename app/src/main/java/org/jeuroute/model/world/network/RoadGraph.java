@@ -17,20 +17,30 @@ import org.jeuroute.model.records.world.RoadGraphNodeDistance;
 import org.jeuroute.model.records.world.RoadGraphPreviousStep;
 import org.jeuroute.model.records.world.RoadGraphRoadInterval;
 import org.jeuroute.model.records.world.RoadLeg;
+import org.jeuroute.model.world.terrain.TerrainMap;
 import org.jeuroute.utils.GeometryUtils;
 
 public final class RoadGraph {
 
-	public static final int GRID_SIZE = 25;
+	public static final int GRID_SIZE = TerrainMap.CELL_SIZE;
 	public static final double ROUTE_NODE_SNAP_DISTANCE = 12.0;
 	private static final double MAX_REATTACH_DISTANCE = (GRID_SIZE * Math.sqrt(2.0)) / 2.0 + 1.0;
 
 	private final List<Road> roads = new ArrayList<>();
+	private final TerrainMap terrain;
 	private final Set<Point> stationNodes = new LinkedHashSet<>();
 	private final Map<Point, List<Road>> intersectionConnections = new LinkedHashMap<>();
 	private final Map<Point, List<Road>> stationConnections = new LinkedHashMap<>();
 	private final List<Road> roadsView = Collections.unmodifiableList(roads);
 	private long version;
+
+	public RoadGraph() {
+		this(null);
+	}
+
+	public RoadGraph(TerrainMap terrain) {
+		this.terrain = terrain;
+	}
 
 	public void addRoad(Road road) {
 		if (!canAddRoad(road.getStart(), road.getEnd())) {
@@ -46,7 +56,18 @@ public final class RoadGraph {
 			start != null &&
 			end != null &&
 			!start.equals(end) &&
+			isLandSegment(start, end) &&
 			!isFullyCoveredByExistingRoads(start, end)
+		);
+	}
+
+	public boolean isLandPosition(Point position) {
+		return position != null && (terrain == null || terrain.isLand(position));
+	}
+
+	public boolean isLandSegment(Point start, Point end) {
+		return (
+			start != null && end != null && (terrain == null || terrain.containsSegment(start, end))
 		);
 	}
 

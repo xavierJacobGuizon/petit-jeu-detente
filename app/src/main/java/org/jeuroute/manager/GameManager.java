@@ -1,7 +1,10 @@
 package org.jeuroute.manager;
 
 import java.awt.Point;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.Random;
 import org.jeuroute.configuration.actions.ActionHandlerRegistry;
 import org.jeuroute.configuration.indicators.IndicatorRegistry;
 import org.jeuroute.gamecore.MouseHandler;
@@ -11,6 +14,8 @@ import org.jeuroute.gamecore.hud.elements.HudButton;
 import org.jeuroute.model.records.preview.LinePreview;
 import org.jeuroute.model.world.network.Road;
 import org.jeuroute.model.world.network.RoadGraph;
+import org.jeuroute.model.world.terrain.generation.IslandTerrainGenerator;
+import org.jeuroute.model.world.terrain.generation.TerrainGenerator;
 import org.jeuroute.model.world.transport.Depot;
 import org.jeuroute.model.world.transport.Station;
 import org.jeuroute.model.world.transport.TransitLine;
@@ -25,35 +30,54 @@ import org.jeuroute.model.world.transport.Vehicle;
  */
 public final class GameManager {
 
-	private final WorldMap worldMap = new WorldMap();
-	private final VehicleManager vehicleManager = new VehicleManager(worldMap.getRoadGraph());
-	private final LineManager lineManager = new LineManager(worldMap.getRoadGraph());
+	private final WorldMap worldMap;
+	private final VehicleManager vehicleManager;
+	private final LineManager lineManager;
 
 	private final ActionHandlerRegistry actionHandlers = new ActionHandlerRegistry();
 	private final IndicatorRegistry indicatorRegistry = new IndicatorRegistry();
 
 	private int fps;
-	private final MouseHandlerManager mouseHandlerManager = new MouseHandlerManager(
-		worldMap.getRoadGraph(),
-		new MouseHandler(),
-		vehicleManager,
-		worldMap.getFixedEntityManager(),
-		this::handleLineStationSelection
-	);
-
-	private final LineCreationController lineCreationController = new LineCreationController(
-		worldMap.getFixedEntityManager(),
-		lineManager,
-		mouseHandlerManager,
-		this::getHud
-	);
-
-	private final LineVehicleDialogController lineVehicleDialogController =
-		new LineVehicleDialogController(lineManager, vehicleManager, this::getHud);
+	private final MouseHandlerManager mouseHandlerManager;
+	private final LineCreationController lineCreationController;
+	private final LineVehicleDialogController lineVehicleDialogController;
 
 	private final HudManager hudManager;
 
 	public GameManager() {
+		this(new IslandTerrainGenerator(), new Random());
+	}
+
+	public GameManager(Random random) {
+		this(new IslandTerrainGenerator(), random);
+	}
+
+	public GameManager(TerrainGenerator terrainGenerator) {
+		this(terrainGenerator, new Random());
+	}
+
+	public GameManager(TerrainGenerator terrainGenerator, Random random) {
+		worldMap = new WorldMap(terrainGenerator, Objects.requireNonNull(random));
+		vehicleManager = new VehicleManager(worldMap.getRoadGraph());
+		lineManager = new LineManager(worldMap.getRoadGraph());
+		mouseHandlerManager = new MouseHandlerManager(
+			worldMap.getRoadGraph(),
+			new MouseHandler(),
+			vehicleManager,
+			worldMap.getFixedEntityManager(),
+			this::handleLineStationSelection
+		);
+		lineCreationController = new LineCreationController(
+			worldMap.getFixedEntityManager(),
+			lineManager,
+			mouseHandlerManager,
+			this::getHud
+		);
+		lineVehicleDialogController = new LineVehicleDialogController(
+			lineManager,
+			vehicleManager,
+			this::getHud
+		);
 		initializeHud();
 		hudManager = new HudManager(actionHandlers, indicatorRegistry);
 		hudManager.addButton(
@@ -183,13 +207,33 @@ public final class GameManager {
 		Depot depot = worldMap.initializeDefaultLayout();
 		vehicleManager.addDepotAccessPosition(depot.getAccessPosition());
 
-		Road firstRoad = worldMap.getRoadGraph().findRoadNear(new Point(60, 350), 1.0);
-		Road secondRoad = worldMap.getRoadGraph().findRoadNear(new Point(60, 525), 1.0);
-		if (firstRoad == null || secondRoad == null) {
+		Point depotPosition = depot.getPosition();
+		List<Road> startingRoads = worldMap
+			.getRoadGraph()
+			.getRoads()
+			.stream()
+			.filter(road -> road.getLength() >= RoadGraph.GRID_SIZE * 4)
+			.sorted(
+				Comparator.comparingDouble(road -> {
+					Point start = road.getStart();
+					Point end = road.getEnd();
+					return Point.distance(
+						(start.x + end.x) / 2.0,
+						(start.y + end.y) / 2.0,
+						depotPosition.x,
+						depotPosition.y
+					);
+				})
+			)
+			.limit(2)
+			.toList();
+		if (startingRoads.size() < 2) {
 			throw new IllegalStateException(
-				"The depot roads did not connect to the starting streets"
+				"The generated road network does not contain enough starting segments"
 			);
 		}
+		Road firstRoad = startingRoads.get(0);
+		Road secondRoad = startingRoads.get(1);
 
 		vehicleManager.createVehicle(
 			firstRoad,
