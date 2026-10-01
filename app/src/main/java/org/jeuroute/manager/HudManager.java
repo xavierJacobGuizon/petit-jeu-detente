@@ -1,16 +1,17 @@
 package org.jeuroute.manager;
 
 import java.util.List;
+import org.jeuroute.configuration.Registry;
 import org.jeuroute.configuration.indicators.HudIndicatorConfigurationCache;
-import org.jeuroute.configuration.interfaces.Registry;
 import org.jeuroute.configuration.menus.MenuDefinitionCache;
+import org.jeuroute.gamecore.enums.HudAnchor;
 import org.jeuroute.gamecore.hud.Hud;
-import org.jeuroute.gamecore.hud.HudAnchor;
-import org.jeuroute.gamecore.hud.HudButton;
-import org.jeuroute.gamecore.hud.HudIndicator;
-import org.jeuroute.gamecore.hud.HudIndicatorSlot;
-import org.jeuroute.configuration.model.HudIndicatorConfiguration;
-import org.jeuroute.configuration.model.MenuDefinition;
+import org.jeuroute.gamecore.hud.elements.HudButton;
+import org.jeuroute.gamecore.hud.elements.HudIndicator;
+import org.jeuroute.gamecore.hud.elements.HudIndicatorSlot;
+import org.jeuroute.model.records.configuration.HudIndicatorConfiguration;
+import org.jeuroute.model.records.configuration.HudIndicatorSlotConfiguration;
+import org.jeuroute.model.records.configuration.MenuDefinition;
 
 public final class HudManager {
 
@@ -62,7 +63,7 @@ public final class HudManager {
 		HudIndicatorConfiguration configuration = new HudIndicatorConfigurationCache().getOrLoad(
 			DEFAULT_INDICATOR_CONFIGURATION_PATH
 		);
-		for (HudIndicatorConfiguration.Slot slotConfiguration : configuration.slots()) {
+		for (HudIndicatorSlotConfiguration slotConfiguration : configuration.slots()) {
 			HudIndicatorSlot slot = new HudIndicatorSlot(slotConfiguration.anchor());
 			for (String indicatorId : slotConfiguration.indicatorIds()) {
 				slot.add(getIndicator(indicatorId));

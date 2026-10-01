@@ -6,11 +6,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-import org.jeuroute.model.world.Depot;
-import org.jeuroute.model.world.ResourceBuilding;
-import org.jeuroute.model.world.ResourceType;
-import org.jeuroute.model.world.RoadGraph;
-import org.jeuroute.model.world.Station;
+import org.jeuroute.model.world.transport.Depot;
+import org.jeuroute.model.world.resources.ResourceBuilding;
+import org.jeuroute.model.world.enums.ResourceType;
+import org.jeuroute.model.world.network.RoadGraph;
+import org.jeuroute.model.world.transport.Station;
 
 public final class ResourceBuildingManager {
 

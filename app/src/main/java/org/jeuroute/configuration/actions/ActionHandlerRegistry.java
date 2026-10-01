@@ -3,7 +3,7 @@ package org.jeuroute.configuration.actions;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import org.jeuroute.configuration.interfaces.Registry;
+import org.jeuroute.configuration.Registry;
 import org.jeuroute.gamecore.MouseHandler;
 
 public final class ActionHandlerRegistry implements Registry<Runnable> {

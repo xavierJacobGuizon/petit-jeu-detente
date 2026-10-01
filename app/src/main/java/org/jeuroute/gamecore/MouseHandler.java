@@ -3,18 +3,10 @@ package org.jeuroute.gamecore;
 import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT;
 
 import java.awt.Point;
-import org.jeuroute.gamecore.preview.PlacementPreview;
+import org.jeuroute.gamecore.enums.MouseMode;
+import org.jeuroute.model.records.preview.enums.PlacementPreviewType;
 
 public class MouseHandler {
-
-	private enum Mode {
-		NONE,
-		ROUTE,
-		VEHICLE,
-		STATION,
-		DEPOT,
-		LINE,
-	}
 
 	private Point dragStart;
 	private Point currentPosition;
@@ -23,7 +15,7 @@ public class MouseHandler {
 	private Point lastReleasedStart;
 	private Point lastReleasedEnd;
 	private boolean hasPendingRoad;
-	private Mode activeMode = Mode.NONE;
+	private MouseMode activeMode = MouseMode.NONE;
 	private Point pendingVehiclePosition;
 	private Point pendingStationPosition;
 	private Point pendingDepotPosition;
@@ -59,63 +51,63 @@ public class MouseHandler {
 	}
 
 	public void onVehiclePlacement(double x, double y) {
-		if (activeMode == Mode.VEHICLE) {
+		if (activeMode == MouseMode.VEHICLE) {
 			pendingVehiclePosition = new Point((int) Math.round(x), (int) Math.round(y));
 		}
 	}
 
 	public void onStationPlacement(double x, double y) {
-		if (activeMode == Mode.STATION) {
+		if (activeMode == MouseMode.STATION) {
 			pendingStationPosition = new Point((int) Math.round(x), (int) Math.round(y));
 		}
 	}
 
 	public void onDepotPlacement(double x, double y) {
-		if (activeMode == Mode.DEPOT) {
+		if (activeMode == MouseMode.DEPOT) {
 			pendingDepotPosition = new Point((int) Math.round(x), (int) Math.round(y));
 		}
 	}
 
 	public void onLineStationSelection(double x, double y) {
-		if (activeMode == Mode.LINE) {
+		if (activeMode == MouseMode.LINE) {
 			pendingLineStationSelection = new Point((int) Math.round(x), (int) Math.round(y));
 		}
 	}
 
 	public void setRouteCreationEnabled(boolean enabled) {
-		setActiveMode(Mode.ROUTE, enabled);
+		setActiveMode(MouseMode.ROUTE, enabled);
 	}
 
 	public boolean isRouteCreationEnabled() {
-		return activeMode == Mode.ROUTE;
+		return activeMode == MouseMode.ROUTE;
 	}
 
 	public void setVehicleCreationEnabled(boolean enabled) {
-		setActiveMode(Mode.VEHICLE, enabled);
+		setActiveMode(MouseMode.VEHICLE, enabled);
 	}
 
 	public void setStationCreationEnabled(boolean enabled) {
-		setActiveMode(Mode.STATION, enabled);
+		setActiveMode(MouseMode.STATION, enabled);
 	}
 
 	public void setDepotCreationEnabled(boolean enabled) {
-		setActiveMode(Mode.DEPOT, enabled);
+		setActiveMode(MouseMode.DEPOT, enabled);
 	}
 
 	public boolean isDepotCreationEnabled() {
-		return activeMode == Mode.DEPOT;
+		return activeMode == MouseMode.DEPOT;
 	}
 
 	public void setLineCreationEnabled(boolean enabled) {
-		setActiveMode(Mode.LINE, enabled);
+		setActiveMode(MouseMode.LINE, enabled);
 	}
 
 	public boolean isLineCreationEnabled() {
-		return activeMode == Mode.LINE;
+		return activeMode == MouseMode.LINE;
 	}
 
 	public boolean isStationCreationEnabled() {
-		return activeMode == Mode.STATION;
+		return activeMode == MouseMode.STATION;
 	}
 
 	public void setvehicleCreationEnabled(boolean enabled) {
@@ -123,11 +115,11 @@ public class MouseHandler {
 	}
 
 	public boolean isVehicleCreationEnabled() {
-		return activeMode == Mode.VEHICLE;
+		return activeMode == MouseMode.VEHICLE;
 	}
 
 	public void cancelCurrentAction() {
-		activeMode = Mode.NONE;
+		activeMode = MouseMode.NONE;
 		dragStart = null;
 		currentPosition = null;
 		dragging = false;
@@ -140,11 +132,11 @@ public class MouseHandler {
 		pendingLineStationSelection = null;
 	}
 
-	private void setActiveMode(Mode mode, boolean enabled) {
+	private void setActiveMode(MouseMode mode, boolean enabled) {
 		if (enabled) {
 			activeMode = mode;
 		} else if (activeMode == mode) {
-			activeMode = Mode.NONE;
+			activeMode = MouseMode.NONE;
 		}
 	}
 
@@ -154,11 +146,11 @@ public class MouseHandler {
 		return placement;
 	}
 
-	public PlacementPreview.Type getPlacementPreviewType() {
+	public PlacementPreviewType getPlacementPreviewType() {
 		return switch (activeMode) {
-			case VEHICLE -> PlacementPreview.Type.VEHICLE;
-			case STATION -> PlacementPreview.Type.STATION;
-			case DEPOT -> PlacementPreview.Type.DEPOT;
+			case VEHICLE -> PlacementPreviewType.VEHICLE;
+			case STATION -> PlacementPreviewType.STATION;
+			case DEPOT -> PlacementPreviewType.DEPOT;
 			default -> null;
 		};
 	}

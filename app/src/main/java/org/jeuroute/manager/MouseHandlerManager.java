@@ -6,10 +6,11 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import org.jeuroute.gamecore.MouseHandler;
 import org.jeuroute.gamecore.WorldRenderer;
-import org.jeuroute.gamecore.preview.PlacementPreview;
-import org.jeuroute.model.world.RoadGraph;
-import org.jeuroute.model.world.RouteTemporaire;
-import org.jeuroute.model.world.Station;
+import org.jeuroute.model.records.preview.PlacementPreview;
+import org.jeuroute.model.records.preview.enums.PlacementPreviewType;
+import org.jeuroute.model.world.network.RoadGraph;
+import org.jeuroute.model.world.network.RouteTemporaire;
+import org.jeuroute.model.world.transport.Station;
 
 public class MouseHandlerManager {
 
@@ -194,14 +195,14 @@ public class MouseHandlerManager {
 		if (mousePosition == null) {
 			return null;
 		}
-		PlacementPreview.Type type = mouseHandler.getPlacementPreviewType();
-		if (type == PlacementPreview.Type.VEHICLE) {
+		PlacementPreviewType type = mouseHandler.getPlacementPreviewType();
+		if (type == PlacementPreviewType.VEHICLE) {
 			return vehicleManager.getPlacementPreview(mousePosition);
 		}
-		if (type == PlacementPreview.Type.STATION) {
+		if (type == PlacementPreviewType.STATION) {
 			return fixedEntityManager.getStationPlacementPreview(mousePosition);
 		}
-		if (type == PlacementPreview.Type.DEPOT) {
+		if (type == PlacementPreviewType.DEPOT) {
 			return fixedEntityManager.getDepotPlacementPreview(mousePosition);
 		}
 		return null;
@@ -213,7 +214,7 @@ public class MouseHandlerManager {
 
 	public void renderPlacementPreview(double zoom) {
 		PlacementPreview preview = getPlacementPreview();
-		if (preview != null && preview.type() == PlacementPreview.Type.STATION) {
+		if (preview != null && preview.type() == PlacementPreviewType.STATION) {
 			WorldRenderer.renderStationRoadPreview(
 				graph.getRoadSegmentsAfterAddingStation(preview.position()),
 				preview.valid(),

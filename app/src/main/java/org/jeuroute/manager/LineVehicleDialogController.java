@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 import org.jeuroute.gamecore.hud.Hud;
-import org.jeuroute.gamecore.hud.HudButton;
-import org.jeuroute.model.world.LineColor;
-import org.jeuroute.model.world.TransitLine;
-import org.jeuroute.model.world.Vehicle;
+import org.jeuroute.gamecore.hud.elements.HudButton;
+import org.jeuroute.model.world.enums.LineColor;
+import org.jeuroute.model.world.transport.TransitLine;
+import org.jeuroute.model.world.transport.Vehicle;
 
 /**
  * Gère les boîtes de dialogue HUD relatives aux lignes (liste, options,

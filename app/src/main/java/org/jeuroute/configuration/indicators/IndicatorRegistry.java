@@ -4,8 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
-import org.jeuroute.configuration.interfaces.Registry;
-import org.jeuroute.gamecore.hud.HudIndicator;
+import org.jeuroute.configuration.Registry;
+import org.jeuroute.gamecore.hud.elements.HudIndicator;
 
 public final class IndicatorRegistry implements Registry<HudIndicator> {
 

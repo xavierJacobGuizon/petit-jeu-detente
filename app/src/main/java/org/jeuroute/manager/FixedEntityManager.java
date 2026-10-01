@@ -6,11 +6,12 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.jeuroute.gamecore.preview.PlacementPreview;
-import org.jeuroute.model.world.Depot;
-import org.jeuroute.model.world.Intersection;
-import org.jeuroute.model.world.RoadGraph;
-import org.jeuroute.model.world.Station;
+import org.jeuroute.model.records.preview.PlacementPreview;
+import org.jeuroute.model.records.preview.enums.PlacementPreviewType;
+import org.jeuroute.model.world.network.Intersection;
+import org.jeuroute.model.world.network.RoadGraph;
+import org.jeuroute.model.world.transport.Depot;
+import org.jeuroute.model.world.transport.Station;
 
 public final class FixedEntityManager {
 
@@ -40,7 +41,7 @@ public final class FixedEntityManager {
 	public PlacementPreview getStationPlacementPreview(Point position) {
 		Point snappedPosition = RoadGraph.snapPoint(position);
 		return new PlacementPreview(
-			PlacementPreview.Type.STATION,
+			PlacementPreviewType.STATION,
 			snappedPosition,
 			getStationAt(snappedPosition) == null
 		);
@@ -70,7 +71,7 @@ public final class FixedEntityManager {
 				depot -> depot.getPosition().distance(snappedPosition) < Depot.HALF_SIZE * 2
 			);
 		return new PlacementPreview(
-			PlacementPreview.Type.DEPOT,
+			PlacementPreviewType.DEPOT,
 			snappedPosition,
 			inBounds && unoccupied
 		);

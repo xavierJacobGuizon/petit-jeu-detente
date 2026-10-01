@@ -8,14 +8,11 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import org.jeuroute.gamecore.MouseHandler;
 import org.jeuroute.gamecore.hud.Hud;
-import org.jeuroute.gamecore.hud.HudButton;
-import org.jeuroute.gamecore.preview.LinePreview;
-import org.jeuroute.manager.FixedEntityManager;
-import org.jeuroute.manager.GameManager;
-import org.jeuroute.manager.LineManager;
-import org.jeuroute.manager.MouseHandlerManager;
-import org.jeuroute.model.world.Station;
-import org.jeuroute.model.world.TransitLine;
+import org.jeuroute.gamecore.hud.elements.HudButton;
+import org.jeuroute.model.records.preview.LinePreview;
+import org.jeuroute.model.records.preview.enums.LinePreviewStatus;
+import org.jeuroute.model.world.transport.Station;
+import org.jeuroute.model.world.transport.TransitLine;
 
 /**
  * Gère le flux de création d'une nouvelle ligne : sélection des stations au
@@ -101,12 +98,12 @@ public final class LineCreationController {
 		if (mousePosition == null) {
 			return null;
 		}
-		LinePreview.Status status = LinePreview.Status.NORMAL;
+		LinePreviewStatus status = LinePreviewStatus.NORMAL;
 		Station hoveredStation = fixedEntityManager.findStationNear(mousePosition, 18.0);
 		if (hoveredStation != null) {
 			status = lineManager.canConnect(selectedStations.getLast(), hoveredStation)
-				? LinePreview.Status.CONNECTABLE
-				: LinePreview.Status.DISCONNECTED;
+				? LinePreviewStatus.CONNECTABLE
+				: LinePreviewStatus.DISCONNECTED;
 		}
 		return new LinePreview(
 			this.selectedStations

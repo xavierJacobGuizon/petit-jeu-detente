@@ -4,9 +4,9 @@ import java.awt.Point;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import org.jeuroute.model.world.Depot;
-import org.jeuroute.model.world.RoadGraph;
-import org.jeuroute.model.world.Station;
+import org.jeuroute.model.world.transport.Depot;
+import org.jeuroute.model.world.network.RoadGraph;
+import org.jeuroute.model.world.transport.Station;
 
 /** Owns the persistent world state and its graph-derived entities. */
 public final class WorldMap {

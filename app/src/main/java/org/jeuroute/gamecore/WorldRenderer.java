@@ -4,16 +4,17 @@ import static org.lwjgl.opengl.GL11.*;
 
 import java.awt.Point;
 import java.util.List;
-import org.jeuroute.gamecore.preview.LinePreview;
-import org.jeuroute.gamecore.preview.PlacementPreview;
+import org.jeuroute.model.records.preview.LinePreview;
+import org.jeuroute.model.records.preview.PlacementPreview;
+import org.jeuroute.model.records.preview.enums.PlacementPreviewType;
+import org.jeuroute.model.world.network.Intersection;
+import org.jeuroute.model.world.network.Road;
+import org.jeuroute.model.world.resources.ResourceBuilding;
 import org.jeuroute.model.world.skin.StationSkin;
-import org.jeuroute.model.world.Depot;
-import org.jeuroute.model.world.Intersection;
-import org.jeuroute.model.world.ResourceBuilding;
-import org.jeuroute.model.world.Road;
-import org.jeuroute.model.world.Station;
-import org.jeuroute.model.world.TransitLine;
-import org.jeuroute.model.world.Vehicle;
+import org.jeuroute.model.world.transport.Depot;
+import org.jeuroute.model.world.transport.Station;
+import org.jeuroute.model.world.transport.TransitLine;
+import org.jeuroute.model.world.transport.Vehicle;
 
 public final class WorldRenderer {
 
@@ -97,7 +98,7 @@ public final class WorldRenderer {
 		}
 
 		Point position = preview.position();
-		if (preview.type() == PlacementPreview.Type.STATION) {
+		if (preview.type() == PlacementPreviewType.STATION) {
 			StationSkin.displayCaptureRadiusPreview(
 				position,
 				Station.CAPTURE_RADIUS,
@@ -105,7 +106,7 @@ public final class WorldRenderer {
 				preview.valid()
 			);
 		}
-		if (preview.type() == PlacementPreview.Type.DEPOT) {
+		if (preview.type() == PlacementPreviewType.DEPOT) {
 			setPreviewColor(preview.valid());
 			beginDashedLines((float) (3.0 * zoom));
 			glBegin(GL_LINES);

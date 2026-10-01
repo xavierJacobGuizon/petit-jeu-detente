@@ -5,10 +5,12 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import org.jeuroute.gamecore.preview.PlacementPreview;
-import org.jeuroute.model.world.Road;
-import org.jeuroute.model.world.RoadGraph;
-import org.jeuroute.model.world.Vehicle;
+import org.jeuroute.model.records.manager.VehiclePlacement;
+import org.jeuroute.model.records.preview.PlacementPreview;
+import org.jeuroute.model.records.preview.enums.PlacementPreviewType;
+import org.jeuroute.model.world.network.Road;
+import org.jeuroute.model.world.network.RoadGraph;
+import org.jeuroute.model.world.transport.Vehicle;
 
 public class VehicleManager {
 
@@ -119,9 +121,9 @@ public class VehicleManager {
 	public PlacementPreview getPlacementPreview(Point position) {
 		VehiclePlacement placement = resolvePlacement(position);
 		if (placement == null) {
-			return new PlacementPreview(PlacementPreview.Type.VEHICLE, position, false);
+			return new PlacementPreview(PlacementPreviewType.VEHICLE, position, false);
 		}
-		return new PlacementPreview(PlacementPreview.Type.VEHICLE, placement.position(), true);
+		return new PlacementPreview(PlacementPreviewType.VEHICLE, placement.position(), true);
 	}
 
 	private VehiclePlacement resolvePlacement(Point position) {
@@ -138,6 +140,4 @@ public class VehicleManager {
 			? null
 			: new VehiclePlacement(road, roadPosition, target);
 	}
-
-	private record VehiclePlacement(Road road, Point position, Point target) {}
 }

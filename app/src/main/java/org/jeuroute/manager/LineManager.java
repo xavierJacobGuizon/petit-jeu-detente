@@ -7,12 +7,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import org.jeuroute.model.world.LineColor;
-import org.jeuroute.model.world.RoadGraph;
-import org.jeuroute.model.world.RoadPath;
-import org.jeuroute.model.world.Station;
-import org.jeuroute.model.world.TransitLine;
-import org.jeuroute.model.world.Vehicle;
+import org.jeuroute.model.world.enums.LineColor;
+import org.jeuroute.model.world.network.RoadGraph;
+import org.jeuroute.model.world.network.RoadPath;
+import org.jeuroute.model.world.transport.Station;
+import org.jeuroute.model.world.transport.TransitLine;
+import org.jeuroute.model.world.transport.Vehicle;
 
 public final class LineManager {
 

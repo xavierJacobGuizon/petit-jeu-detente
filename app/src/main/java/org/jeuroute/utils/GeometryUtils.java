@@ -1,7 +1,7 @@
 package org.jeuroute.utils;
 
 import java.awt.Point;
-import org.jeuroute.model.world.Vehicle;
+import org.jeuroute.model.world.transport.Vehicle;
 
 public final class GeometryUtils {
 
@@ -26,7 +26,7 @@ public final class GeometryUtils {
 	 * @param center  Point central du rectangle
 	 * @return Point représentant le coin supérieur gauche du rectangle
 	 */
-	public static Point rectangleStart(org.jeuroute.model.world.Vehicle vehicle, Point center) {
+	public static Point rectangleStart(org.jeuroute.model.world.transport.Vehicle vehicle, Point center) {
 		double half = vehicle.halfSize;
 		return new Point((int) Math.round(center.x - half), (int) Math.round(center.y - half));
 	}

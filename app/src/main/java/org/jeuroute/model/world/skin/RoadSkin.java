@@ -8,7 +8,6 @@ import static org.lwjgl.opengl.GL11.glLineWidth;
 import static org.lwjgl.opengl.GL11.glVertex2d;
 
 import java.awt.Point;
-import org.jeuroute.model.world.skin.Skin;
 
 public class RoadSkin implements Skin {
 

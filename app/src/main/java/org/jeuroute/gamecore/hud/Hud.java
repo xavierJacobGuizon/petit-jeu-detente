@@ -4,6 +4,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import org.jeuroute.gamecore.hud.elements.HudButton;
+import org.jeuroute.gamecore.hud.elements.HudDialog;
+import org.jeuroute.gamecore.hud.elements.HudIndicatorSlot;
+import org.jeuroute.gamecore.hud.presentation.HudLayout;
+import org.jeuroute.model.records.hud.HudDialogPlacement;
 
 public final class Hud {
 
@@ -90,7 +95,7 @@ public final class Hud {
 	public boolean handleClick(double mouseX, double mouseY, int windowWidth, int windowHeight) {
 		if (dialog != null) {
 			HudDialog activeDialog = dialog;
-			HudLayout.DialogPlacement placement = HudLayout.dialogPlacement(
+			HudDialogPlacement placement = HudLayout.dialogPlacement(
 				activeDialog.getOptions().size(),
 				activeDialog.getPage(),
 				windowWidth,

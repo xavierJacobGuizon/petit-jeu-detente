@@ -3,8 +3,9 @@ package org.jeuroute.configuration.indicators;
 import java.util.ArrayList;
 import java.util.List;
 import org.jeuroute.configuration.XmlResourceCache;
-import org.jeuroute.gamecore.hud.HudAnchor;
-import org.jeuroute.configuration.model.HudIndicatorConfiguration;
+import org.jeuroute.gamecore.enums.HudAnchor;
+import org.jeuroute.model.records.configuration.HudIndicatorConfiguration;
+import org.jeuroute.model.records.configuration.HudIndicatorSlotConfiguration;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -23,7 +24,7 @@ public final class HudIndicatorConfigurationCache {
 		if (!"hud".equals(root.getTagName())) {
 			throw new IllegalArgumentException("HUD indicator configuration root must be 'hud'");
 		}
-		List<HudIndicatorConfiguration.Slot> slots = new ArrayList<>();
+		List<HudIndicatorSlotConfiguration> slots = new ArrayList<>();
 		NodeList children = root.getChildNodes();
 		for (int index = 0; index < children.getLength(); index++) {
 			Node child = children.item(index);
@@ -41,7 +42,7 @@ public final class HudIndicatorConfigurationCache {
 		return new HudIndicatorConfiguration(slots);
 	}
 
-	private static HudIndicatorConfiguration.Slot parseSlot(Element element) {
+	private static HudIndicatorSlotConfiguration parseSlot(Element element) {
 		HudAnchor anchor;
 		try {
 			anchor = HudAnchor.valueOf(requiredAttribute(element, "anchor"));
@@ -63,7 +64,7 @@ public final class HudIndicatorConfigurationCache {
 			}
 			indicatorIds.add(requiredAttribute(indicatorElement, "ref"));
 		}
-		return new HudIndicatorConfiguration.Slot(anchor, indicatorIds);
+		return new HudIndicatorSlotConfiguration(anchor, indicatorIds);
 	}
 
 	private static String requiredAttribute(Element element, String name) {

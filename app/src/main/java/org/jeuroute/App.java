@@ -6,7 +6,7 @@ import org.jeuroute.gamecore.GameLoop;
 import org.jeuroute.gamecore.GameWindow;
 import org.jeuroute.gamecore.WorldRenderer;
 import org.jeuroute.gamecore.camera.Camera2D;
-import org.jeuroute.gamecore.hud.HudRenderer;
+import org.jeuroute.gamecore.hud.presentation.HudRenderer;
 import org.jeuroute.manager.GameManager;
 import org.lwjgl.opengl.GL;
 

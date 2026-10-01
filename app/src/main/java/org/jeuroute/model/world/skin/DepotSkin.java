@@ -3,8 +3,7 @@ package org.jeuroute.model.world.skin;
 import static org.lwjgl.opengl.GL11.*;
 
 import java.awt.Point;
-import org.jeuroute.model.world.skin.Skin;
-import org.jeuroute.model.world.Depot;
+import org.jeuroute.model.world.transport.Depot;
 
 public final class DepotSkin implements Skin {
 

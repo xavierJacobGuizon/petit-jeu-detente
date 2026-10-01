@@ -14,30 +14,32 @@ import org.jeuroute.configuration.menus.MenuDefinitionCache;
 import org.jeuroute.gamecore.GameLoop;
 import org.jeuroute.gamecore.MouseHandler;
 import org.jeuroute.gamecore.camera.Camera2D;
+import org.jeuroute.gamecore.enums.HudAnchor;
 import org.jeuroute.gamecore.hud.Hud;
-import org.jeuroute.gamecore.hud.HudAnchor;
-import org.jeuroute.gamecore.hud.HudButton;
-import org.jeuroute.gamecore.hud.HudIndicator;
-import org.jeuroute.gamecore.hud.HudIndicatorSlot;
-import org.jeuroute.gamecore.hud.HudLayout;
-import org.jeuroute.gamecore.preview.LinePreview;
-import org.jeuroute.gamecore.preview.PlacementPreview;
+import org.jeuroute.gamecore.hud.elements.HudButton;
+import org.jeuroute.gamecore.hud.elements.HudIndicator;
+import org.jeuroute.gamecore.hud.elements.HudIndicatorSlot;
+import org.jeuroute.gamecore.hud.presentation.HudLayout;
 import org.jeuroute.manager.FixedEntityManager;
 import org.jeuroute.manager.GameManager;
 import org.jeuroute.manager.HudManager;
 import org.jeuroute.manager.LineManager;
 import org.jeuroute.manager.MouseHandlerManager;
 import org.jeuroute.manager.VehicleManager;
-import org.jeuroute.configuration.model.HudIndicatorConfiguration;
-import org.jeuroute.configuration.model.MenuDefinition;
-import org.jeuroute.model.world.Depot;
-import org.jeuroute.model.world.Intersection;
-import org.jeuroute.model.world.Road;
-import org.jeuroute.model.world.RoadGraph;
-import org.jeuroute.model.world.RoadPath;
-import org.jeuroute.model.world.Station;
-import org.jeuroute.model.world.TransitLine;
-import org.jeuroute.model.world.Vehicle;
+import org.jeuroute.model.records.configuration.HudIndicatorConfiguration;
+import org.jeuroute.model.records.configuration.MenuDefinition;
+import org.jeuroute.model.records.preview.LinePreview;
+import org.jeuroute.model.records.preview.PlacementPreview;
+import org.jeuroute.model.records.preview.enums.LinePreviewStatus;
+import org.jeuroute.model.records.preview.enums.PlacementPreviewType;
+import org.jeuroute.model.world.network.Intersection;
+import org.jeuroute.model.world.network.Road;
+import org.jeuroute.model.world.network.RoadGraph;
+import org.jeuroute.model.world.network.RoadPath;
+import org.jeuroute.model.world.transport.Depot;
+import org.jeuroute.model.world.transport.Station;
+import org.jeuroute.model.world.transport.TransitLine;
+import org.jeuroute.model.world.transport.Vehicle;
 import org.junit.jupiter.api.Test;
 
 class AppTest {
@@ -408,7 +410,7 @@ class AppTest {
 		assertTrue(mouseHandler.isDepotCreationEnabled());
 		mouseHandler.onMove(100, 100);
 		PlacementPreview preview = game.getMouseHandlerManager().getPlacementPreview();
-		assertEquals(PlacementPreview.Type.DEPOT, preview.type());
+		assertEquals(PlacementPreviewType.DEPOT, preview.type());
 		assertTrue(preview.valid());
 
 		mouseHandler.onDepotPlacement(100, 100);
@@ -560,7 +562,7 @@ class AppTest {
 		PlacementPreview validPreview = vehicleManager.getPlacementPreview(new Point(50, 108));
 		PlacementPreview invalidPreview = vehicleManager.getPlacementPreview(new Point(50, 140));
 
-		assertEquals(PlacementPreview.Type.VEHICLE, validPreview.type());
+		assertEquals(PlacementPreviewType.VEHICLE, validPreview.type());
 		assertEquals(new Point(50, 100), validPreview.position());
 		assertTrue(validPreview.valid());
 		assertEquals(new Point(50, 140), invalidPreview.position());
@@ -579,7 +581,7 @@ class AppTest {
 			new Point(104, 104)
 		);
 
-		assertEquals(PlacementPreview.Type.STATION, availablePreview.type());
+		assertEquals(PlacementPreviewType.STATION, availablePreview.type());
 		assertEquals(new Point(100, 100), availablePreview.position());
 		assertTrue(availablePreview.valid());
 		assertEquals(new Point(100, 100), occupiedPreview.position());
@@ -606,9 +608,9 @@ class AppTest {
 		mouseHandler.onMove(101, 101);
 		PlacementPreview stationPreview = mouseHandlerManager.getPlacementPreview();
 
-		assertEquals(PlacementPreview.Type.VEHICLE, vehiclePreview.type());
+		assertEquals(PlacementPreviewType.VEHICLE, vehiclePreview.type());
 		assertEquals(new Point(50, 100), vehiclePreview.position());
-		assertEquals(PlacementPreview.Type.STATION, stationPreview.type());
+		assertEquals(PlacementPreviewType.STATION, stationPreview.type());
 		assertEquals(new Point(100, 100), stationPreview.position());
 	}
 
@@ -655,11 +657,11 @@ class AppTest {
 		game.update(0.0);
 
 		mouseHandler.onMove(reachable.getPosition().x, reachable.getPosition().y);
-		assertEquals(LinePreview.Status.CONNECTABLE, game.getLinePreview().status());
+		assertEquals(LinePreviewStatus.CONNECTABLE, game.getLinePreview().status());
 		mouseHandler.onMove(isolated.getPosition().x, isolated.getPosition().y);
-		assertEquals(LinePreview.Status.DISCONNECTED, game.getLinePreview().status());
+		assertEquals(LinePreviewStatus.DISCONNECTED, game.getLinePreview().status());
 		mouseHandler.onMove(250, 250);
-		assertEquals(LinePreview.Status.NORMAL, game.getLinePreview().status());
+		assertEquals(LinePreviewStatus.NORMAL, game.getLinePreview().status());
 	}
 
 	@Test
@@ -1256,7 +1258,7 @@ class AppTest {
 		assertEquals("COULEUR LIGNE 1", hud.getDialog().getTitle());
 		assertTrue(hud.handleClick(640, 280, 1280, 720));
 
-		assertEquals(org.jeuroute.model.world.LineColor.CORAL, line.getColor());
+		assertEquals(org.jeuroute.model.world.enums.LineColor.CORAL, line.getColor());
 	}
 
 	@Test
