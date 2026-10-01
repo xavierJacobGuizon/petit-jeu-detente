@@ -126,6 +126,20 @@ public class MouseHandler {
 		return activeMode == Mode.VEHICLE;
 	}
 
+	public void cancelCurrentAction() {
+		activeMode = Mode.NONE;
+		dragStart = null;
+		currentPosition = null;
+		dragging = false;
+		lastReleasedStart = null;
+		lastReleasedEnd = null;
+		hasPendingRoad = false;
+		pendingVehiclePosition = null;
+		pendingStationPosition = null;
+		pendingDepotPosition = null;
+		pendingLineStationSelection = null;
+	}
+
 	private void setActiveMode(Mode mode, boolean enabled) {
 		if (enabled) {
 			activeMode = mode;

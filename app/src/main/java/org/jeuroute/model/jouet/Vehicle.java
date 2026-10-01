@@ -3,7 +3,6 @@ package org.jeuroute.model.jouet;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
-import org.jeuroute.model.interfaces.Peau;
 import org.jeuroute.model.interfaces.jouetpeau.VehiclePeau;
 import org.jeuroute.utils.GeometryUtils;
 
@@ -12,10 +11,12 @@ public class Vehicle {
 	public static final double REFERENCE_MASS_KG = 1_000.0;
 	public static final double METERS_PER_PIXEL = 0.1;
 	public static final double DEFAULT_POWER_WATTS = 900_000.0;
+	public static final int MAX_CARGO_UNITS = 4;
+	public static final double RESOURCE_TRANSFER_SECONDS_PER_UNIT = 0.5;
 	private static final double SIMULATION_STEP_SECONDS = 1.0 / 60.0;
 	private static final double DISTANCE_EPSILON = 0.000001;
 
-	private final Peau vehiclePeau;
+	private final VehiclePeau vehiclePeau;
 
 	private final double size;
 	public final double halfSize;
@@ -44,6 +45,12 @@ public class Vehicle {
 	private boolean parkedAtStation;
 	private boolean parkedAtDepot;
 	private boolean parkingPathAttempted;
+	private ResourceType cargoType;
+	private int cargoAmount;
+	private Station loadingStation;
+	private ResourceType loadingResourceType;
+	private double resourceTransferAccumulator;
+	private boolean unloadingResources;
 
 	public Vehicle(
 		RoadGraph roadGraph,
@@ -161,6 +168,18 @@ public class Vehicle {
 		return parkedAtDepot;
 	}
 
+	public ResourceType getCargoType() {
+		return cargoType;
+	}
+
+	public int getCargoAmount() {
+		return cargoAmount;
+	}
+
+	public boolean isWaitingForResources() {
+		return loadingStation != null;
+	}
+
 	public void addDepotAccessPosition(Point accessPosition) {
 		Point copy = new Point(accessPosition);
 		if (depotAccessPositions.contains(copy)) {
@@ -201,6 +220,7 @@ public class Vehicle {
 		parkedAtStation = false;
 		parkedAtDepot = false;
 		parkingPathAttempted = false;
+		clearResourceTransfer();
 	}
 
 	/**
@@ -262,13 +282,13 @@ public class Vehicle {
 	public void display() {
 		Point start = GeometryUtils.rectangleStart(this, this.position);
 		Point end = GeometryUtils.rectangleEnd(this, this.position);
-		vehiclePeau.display(start, end);
+		vehiclePeau.display(start, end, cargoAmount, cargoType, 1.0);
 	}
 
 	public void display(double scale) {
 		Point start = GeometryUtils.rectangleStart(this, this.position);
 		Point end = GeometryUtils.rectangleEnd(this, this.position);
-		vehiclePeau.display(start, end, scale);
+		vehiclePeau.display(start, end, cargoAmount, cargoType, scale);
 	}
 
 	/**
@@ -319,6 +339,10 @@ public class Vehicle {
 	}
 
 	private void updateLine(double deltaSeconds) {
+		if (loadingStation != null) {
+			updateResourceTransfer(deltaSeconds);
+			return;
+		}
 		if (activePath == null) {
 			if (replanningCurrentLeg) {
 				activePath = findPathTo(currentLineDestination()).orElse(null);
@@ -485,6 +509,7 @@ public class Vehicle {
 			parkAtCurrentPosition();
 			return;
 		}
+		Station arrivedStation = getArrivedStation();
 		if (approachingLine) {
 			approachingLine = false;
 			lineSegmentIndex = 0;
@@ -497,6 +522,109 @@ public class Vehicle {
 		} else {
 			lineSegmentIndex++;
 		}
+		beginResourceTransfer(arrivedStation);
+	}
+
+	private Station getArrivedStation() {
+		if (approachingLine || returningToStart) {
+			return assignedLine.getStartStation();
+		}
+		return assignedLine.getStations().get(lineSegmentIndex + 1);
+	}
+
+	private void beginResourceTransfer(Station station) {
+		loadingStation = station;
+		resourceTransferAccumulator = 0.0;
+		if (cargoAmount > 0 && station.getAccessibleResourceDemand(cargoType) > 0) {
+			loadingResourceType = cargoType;
+			unloadingResources = true;
+			return;
+		}
+		if (!beginLoadingResources(station)) {
+			clearResourceTransfer();
+		}
+	}
+
+	private void updateResourceTransfer(double deltaSeconds) {
+		if (deltaSeconds <= 0.0) {
+			return;
+		}
+		resourceTransferAccumulator += deltaSeconds;
+		while (
+			resourceTransferAccumulator + DISTANCE_EPSILON >= RESOURCE_TRANSFER_SECONDS_PER_UNIT
+		) {
+			if (unloadingResources) {
+				if (loadingStation.deliverResources(loadingResourceType, 1) == 0) {
+					clearResourceTransfer();
+					return;
+				}
+				cargoAmount--;
+				if (cargoAmount == 0) {
+					cargoType = null;
+				}
+			} else {
+				if (
+					cargoAmount >= MAX_CARGO_UNITS ||
+					loadingStation.takeAccessibleResources(loadingResourceType, 1) == 0
+				) {
+					clearResourceTransfer();
+					return;
+				}
+				cargoType = loadingResourceType;
+				cargoAmount++;
+			}
+			resourceTransferAccumulator -= RESOURCE_TRANSFER_SECONDS_PER_UNIT;
+
+			if (
+				unloadingResources &&
+				(cargoAmount == 0 ||
+					loadingStation.getAccessibleResourceDemand(loadingResourceType) == 0)
+			) {
+				Station station = loadingStation;
+				if (cargoAmount != 0 || !beginLoadingResources(station)) {
+					clearResourceTransfer();
+					return;
+				}
+			}
+			if (
+				!unloadingResources &&
+				(cargoAmount >= MAX_CARGO_UNITS ||
+					loadingStation.getAccessibleResourceStock(loadingResourceType) == 0)
+			) {
+				clearResourceTransfer();
+				return;
+			}
+		}
+	}
+
+	private boolean beginLoadingResources(Station station) {
+		if (cargoAmount >= MAX_CARGO_UNITS) {
+			return false;
+		}
+		ResourceType selectedType = cargoType;
+		if (selectedType == null) {
+			int largestAvailableStock = 0;
+			for (ResourceType resourceType : ResourceType.values()) {
+				int availableStock = station.getAccessibleResourceStock(resourceType);
+				if (availableStock > largestAvailableStock) {
+					largestAvailableStock = availableStock;
+					selectedType = resourceType;
+				}
+			}
+		}
+		if (selectedType == null || station.getAccessibleResourceStock(selectedType) == 0) {
+			return false;
+		}
+		loadingResourceType = selectedType;
+		unloadingResources = false;
+		return true;
+	}
+
+	private void clearResourceTransfer() {
+		loadingStation = null;
+		loadingResourceType = null;
+		resourceTransferAccumulator = 0.0;
+		unloadingResources = false;
 	}
 
 	private void parkAtCurrentPosition() {

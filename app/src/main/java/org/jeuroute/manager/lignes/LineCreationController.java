@@ -123,11 +123,12 @@ public final class LineCreationController {
 		hud().showOneShotActionButton(new HudButton("VALIDER", this::validate), this::cancel);
 	}
 
-	private void cancel() {
+	public void cancel() {
 		selectedStations.clear();
 		MouseHandler handler = mouseHandlerManager.getMouseHandler();
 		handler.setLineCreationEnabled(false);
 		handler.consumeLineStationSelection();
+		hud().hideOneShotActionButton();
 	}
 
 	private void validate() {

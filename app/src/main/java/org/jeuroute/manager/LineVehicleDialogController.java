@@ -78,7 +78,9 @@ final class LineVehicleDialogController {
 			"LIGNE " + lineNumber,
 			List.of(
 				new HudButton("COULEUR", () -> openLineColorDialog(line, lineNumber)),
-				new HudButton("AJOUTER VEHICULE", () -> openAvailableVehicleDialog(line)),
+				new HudButton("AJOUTER VEHICULE", () ->
+					openAvailableVehicleDialog(line, lineNumber)
+				),
 				new HudButton("FERMER", () -> {})
 			)
 		);
@@ -95,29 +97,21 @@ final class LineVehicleDialogController {
 		hud().showDialog("COULEUR LIGNE " + lineNumber, options);
 	}
 
-	private void openAvailableVehicleDialog(TransitLine line) {
+	private void openAvailableVehicleDialog(TransitLine line, int lineNumber) {
 		List<Vehicle> unassignedVehicles = vehicleManager.getUnassignedVehicles();
-		if (unassignedVehicles.isEmpty()) {
-			hud().showDialog("AUCUN VEHICULE LIBRE", List.of(new HudButton("FERMER", () -> {})));
-			return;
-		}
-
 		List<HudButton> options = new ArrayList<>();
 		for (Vehicle vehicle : unassignedVehicles) {
 			int vehicleNumber = vehicleManager.getVehicleNumber(vehicle);
 			options.add(
 				new HudButton("VEHICULE " + vehicleNumber + " | LIBRE", () -> {
 					if (lineManager.assignVehicle(vehicle, line)) {
-						hud().showDialog(
-							"VEHICULE " + vehicleNumber + " AFFECTE",
-							List.of(new HudButton("FERMER", () -> {}))
-						);
+						openAvailableVehicleDialog(line, lineNumber);
 					}
 				})
 			);
 		}
-		options.add(new HudButton("ANNULER", () -> {}));
-		hud().showDialog("AJOUTER UN VEHICULE", options);
+		options.add(new HudButton("RETOUR", () -> openLineOptionsDialog(line, lineNumber)));
+		hud().showDialog("AJOUTER DES VEHICULES", options);
 	}
 
 	void openVehicleListDialog() {

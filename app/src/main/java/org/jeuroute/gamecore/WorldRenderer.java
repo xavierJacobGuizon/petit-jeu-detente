@@ -6,8 +6,10 @@ import java.awt.Point;
 import java.util.List;
 import org.jeuroute.gamecore.preview.LinePreview;
 import org.jeuroute.gamecore.preview.PlacementPreview;
+import org.jeuroute.model.interfaces.jouetpeau.StationPeau;
 import org.jeuroute.model.jouet.Depot;
 import org.jeuroute.model.jouet.Intersection;
+import org.jeuroute.model.jouet.ResourceBuilding;
 import org.jeuroute.model.jouet.Road;
 import org.jeuroute.model.jouet.Station;
 import org.jeuroute.model.jouet.TransitLine;
@@ -33,6 +35,14 @@ public final class WorldRenderer {
 		for (Intersection intersection : intersections) {
 			if (intersection != null) {
 				intersection.display();
+			}
+		}
+	}
+
+	public static void renderResourceBuildings(List<ResourceBuilding> buildings, double zoom) {
+		for (ResourceBuilding building : buildings) {
+			if (building != null) {
+				building.display(zoom);
 			}
 		}
 	}
@@ -87,6 +97,14 @@ public final class WorldRenderer {
 		}
 
 		Point position = preview.position();
+		if (preview.type() == PlacementPreview.Type.STATION) {
+			StationPeau.displayCaptureRadiusPreview(
+				position,
+				Station.CAPTURE_RADIUS,
+				zoom,
+				preview.valid()
+			);
+		}
 		if (preview.type() == PlacementPreview.Type.DEPOT) {
 			setPreviewColor(preview.valid());
 			beginDashedLines((float) (3.0 * zoom));

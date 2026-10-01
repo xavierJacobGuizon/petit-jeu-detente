@@ -122,8 +122,8 @@ class AppTest {
 
 		assertTrue(hud.handleClick(860, 685, 1280, 720));
 		assertEquals("ROUTES", hud.getOpenMenu().getLabel());
-		assertEquals("AJOUTER ROUTE", hud.getOpenMenu().getSubmenu().get(0).getLabel());
-		assertEquals("ROUTE SENS UNIQUE", hud.getOpenMenu().getSubmenu().get(1).getLabel());
+		assertEquals("DOUBLE SENS", hud.getOpenMenu().getSubmenu().get(0).getLabel());
+		assertEquals("SENS UNIQUE", hud.getOpenMenu().getSubmenu().get(1).getLabel());
 
 		assertTrue(hud.handleClick(860, 639, 1280, 720));
 		assertTrue(mouseHandler.isRouteCreationEnabled());
@@ -1164,14 +1164,20 @@ class AppTest {
 		assertTrue(hud.handleClick(640, 364, 1280, 720));
 		assertNotNull(hud.getDialog());
 		assertTrue(hud.handleClick(640, 385, 1280, 720));
-		assertEquals("AJOUTER UN VEHICULE", hud.getDialog().getTitle());
+		assertEquals("AJOUTER DES VEHICULES", hud.getDialog().getTitle());
 		assertTrue(hud.getDialog().getOptions().get(0).getLabel().contains("VEHICULE 1"));
 		assertTrue(hud.handleClick(640, 322, 1280, 720));
-		assertEquals("VEHICULE 1 AFFECTE", hud.getDialog().getTitle());
-		assertTrue(hud.handleClick(640, 385, 1280, 720));
+		assertEquals("AJOUTER DES VEHICULES", hud.getDialog().getTitle());
+		assertTrue(hud.getDialog().getOptions().get(0).getLabel().contains("VEHICULE 2"));
+		assertTrue(hud.handleClick(640, 343, 1280, 720));
+		assertEquals("AJOUTER DES VEHICULES", hud.getDialog().getTitle());
 
 		Vehicle vehicle = game.getVehicleManager().getVehicles().get(0);
+		Vehicle secondVehicle = game.getVehicleManager().getVehicles().get(1);
 		assertSame(game.getLineManager().getLines().get(0), vehicle.getAssignedLine());
+		assertSame(game.getLineManager().getLines().get(0), secondVehicle.getAssignedLine());
+		assertTrue(hud.handleClick(640, 406, 1280, 720));
+		assertEquals("LIGNE 1", hud.getDialog().getTitle());
 		game.update(0.0);
 		advanceGameVehicleUntil(game, vehicle, endStation.getPosition());
 		advanceGameVehicleUntil(game, vehicle, startStation.getPosition());

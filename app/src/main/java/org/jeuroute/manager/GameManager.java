@@ -26,26 +26,24 @@ import org.jeuroute.model.jouet.Vehicle;
  */
 public final class GameManager {
 
-	private final FixedEntityManager fixedEntityManager = new FixedEntityManager();
-	private final RoadGraph roadGraph = new RoadGraph();
-	private final VehicleManager vehicleManager = new VehicleManager(roadGraph);
-	private final LineManager lineManager = new LineManager(roadGraph);
+	private final WorldMap worldMap = new WorldMap();
+	private final VehicleManager vehicleManager = new VehicleManager(worldMap.getRoadGraph());
+	private final LineManager lineManager = new LineManager(worldMap.getRoadGraph());
 
 	private final ActionHandlerRegistry actionHandlers = new ActionHandlerRegistry();
 	private final IndicatorRegistry indicatorRegistry = new IndicatorRegistry();
 
-	private long synchronizedFixedEntityGraphVersion = -1;
 	private int fps;
 	private final MouseHandlerManager mouseHandlerManager = new MouseHandlerManager(
-		roadGraph,
+		worldMap.getRoadGraph(),
 		new MouseHandler(),
 		vehicleManager,
-		fixedEntityManager,
+		worldMap.getFixedEntityManager(),
 		this::handleLineStationSelection
 	);
 
 	private final LineCreationController lineCreationController = new LineCreationController(
-		fixedEntityManager,
+		worldMap.getFixedEntityManager(),
 		lineManager,
 		mouseHandlerManager,
 		this::getHud
@@ -76,8 +74,8 @@ public final class GameManager {
 			HudButton.submenu(
 				"ROUTES",
 				List.of(
-					new HudButton("AJOUTER ROUTE", actionHandlers.get("toggle-route")),
-					new HudButton("ROUTE SENS UNIQUE", () -> {})
+					new HudButton("DOUBLE SENS", actionHandlers.get("toggle-route")),
+					new HudButton("SENS UNIQUE", () -> {})
 				)
 			)
 		);
@@ -85,7 +83,11 @@ public final class GameManager {
 	}
 
 	public RoadGraph getRoadGraph() {
-		return roadGraph;
+		return worldMap.getRoadGraph();
+	}
+
+	public WorldMap getWorldMap() {
+		return worldMap;
 	}
 
 	public VehicleManager getVehicleManager() {
@@ -96,16 +98,20 @@ public final class GameManager {
 		return lineManager;
 	}
 
+	public ResourceBuildingManager getResourceBuildingManager() {
+		return worldMap.getResourceBuildingManager();
+	}
+
 	public List<Station> getStations() {
-		return fixedEntityManager.getStations();
+		return worldMap.getStations();
 	}
 
 	public Depot getDepot() {
-		return fixedEntityManager.getDepots().getFirst();
+		return worldMap.getDepots().getFirst();
 	}
 
 	public List<Depot> getDepots() {
-		return fixedEntityManager.getDepots();
+		return worldMap.getDepots();
 	}
 
 	public ActionHandlerRegistry getActionHandlers() {
@@ -117,7 +123,7 @@ public final class GameManager {
 	}
 
 	public FixedEntityManager getFixedEntityManager() {
-		return fixedEntityManager;
+		return worldMap.getFixedEntityManager();
 	}
 
 	public MouseHandlerManager getMouseHandlerManager() {
@@ -145,6 +151,15 @@ public final class GameManager {
 			createDepotAt(depotPosition);
 		}
 		synchronizeFixedEntities();
+		worldMap.update(deltaSeconds);
+	}
+
+	public void cancelActiveAction() {
+		boolean lineCreationEnabled = mouseHandlerManager.getMouseHandler().isLineCreationEnabled();
+		mouseHandlerManager.cancelCurrentAction();
+		if (lineCreationEnabled) {
+			lineCreationController.cancel();
+		}
 	}
 
 	public void renderDragLine() {
@@ -166,15 +181,11 @@ public final class GameManager {
 	}
 
 	private void initializeWorld() {
-		roadGraph.createRoad(new Point(50, 360), new Point(123, 360));
-		roadGraph.createRoad(new Point(50, 520), new Point(123, 520));
-		roadGraph.createRoad(new Point(125, 350), new Point(125, 525));
-		Depot depot = fixedEntityManager.createDepot(new Point(75, 275));
-		roadGraph.createRoad(depot.getAccessPosition(), depot.getRoadEndPosition());
+		Depot depot = worldMap.initializeDefaultLayout();
 		vehicleManager.addDepotAccessPosition(depot.getAccessPosition());
 
-		Road firstRoad = roadGraph.findRoadNear(new Point(60, 350), 1.0);
-		Road secondRoad = roadGraph.findRoadNear(new Point(60, 525), 1.0);
+		Road firstRoad = worldMap.getRoadGraph().findRoadNear(new Point(60, 350), 1.0);
+		Road secondRoad = worldMap.getRoadGraph().findRoadNear(new Point(60, 525), 1.0);
 		if (firstRoad == null || secondRoad == null) {
 			throw new IllegalStateException(
 				"The depot roads did not connect to the starting streets"
@@ -209,13 +220,9 @@ public final class GameManager {
 	}
 
 	private void createDepotAt(Point position) {
-		if (!fixedEntityManager.getDepotPlacementPreview(position).valid()) {
-			return;
-		}
-		Depot depot = fixedEntityManager.createDepot(position);
-		Point accessPosition = depot.getAccessPosition();
-		roadGraph.createRoad(accessPosition, depot.getRoadEndPosition());
-		vehicleManager.addDepotAccessPosition(accessPosition);
+		worldMap
+			.createDepot(position)
+			.ifPresent(depot -> vehicleManager.addDepotAccessPosition(depot.getAccessPosition()));
 	}
 
 	private void toggleDepotCreation() {
@@ -224,15 +231,9 @@ public final class GameManager {
 	}
 
 	private void synchronizeFixedEntities() {
-		long graphVersion = roadGraph.getVersion();
-		if (synchronizedFixedEntityGraphVersion == graphVersion) {
+		if (!worldMap.synchronizeGraphEntities()) {
 			return;
 		}
-		fixedEntityManager.synchronizeIntersections(
-			roadGraph.getIntersectionPositions(),
-			roadGraph
-		);
-		fixedEntityManager.synchronizeStations(roadGraph);
 		List<TransitLine> removedLines = lineManager.refreshPaths();
 		for (Vehicle vehicle : vehicleManager.getVehicles()) {
 			if (
@@ -242,7 +243,6 @@ public final class GameManager {
 				vehicle.unassignLine();
 			}
 		}
-		synchronizedFixedEntityGraphVersion = graphVersion;
 	}
 
 	private void initializeHud() {
@@ -253,10 +253,10 @@ public final class GameManager {
 		);
 		indicatorRegistry.registerDefaults(
 			() -> Integer.toString(fps),
-			() -> Integer.toString(roadGraph.getRoads().size()),
-			() -> Integer.toString(fixedEntityManager.getIntersections().size()),
+			() -> Integer.toString(worldMap.getRoadGraph().getRoads().size()),
+			() -> Integer.toString(worldMap.getFixedEntityManager().getIntersections().size()),
 			() -> Integer.toString(vehicleManager.getVehicles().size()),
-			() -> Integer.toString(fixedEntityManager.getStations().size())
+			() -> Integer.toString(worldMap.getStations().size())
 		);
 	}
 }

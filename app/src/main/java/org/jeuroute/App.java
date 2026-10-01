@@ -21,6 +21,7 @@ public class App {
 		window.setCamera(camera);
 		window.setMouseHandler(gameManager.getMouseHandlerManager().getMouseHandler());
 		window.setHud(gameManager.getHud());
+		window.setRightClickHandler(gameManager::cancelActiveAction);
 	}
 
 	public void run() {
@@ -70,6 +71,10 @@ public class App {
 		camera.apply(window.getWidth(), window.getHeight());
 
 		WorldRenderer.renderRoads(gameManager.getRoadGraph().getRoads(), camera.getZoom());
+		WorldRenderer.renderResourceBuildings(
+			gameManager.getWorldMap().getResourceBuildingManager().getBuildings(),
+			camera.getZoom()
+		);
 		WorldRenderer.renderLines(gameManager.getLineManager().getLines(), camera.getZoom());
 		WorldRenderer.renderIntersections(gameManager.getFixedEntityManager().getIntersections());
 		WorldRenderer.renderStations(

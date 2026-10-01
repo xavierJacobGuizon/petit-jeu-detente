@@ -41,6 +41,11 @@ public class MouseHandlerManager {
 		return mouseHandler;
 	}
 
+	public void cancelCurrentAction() {
+		mouseHandler.cancelCurrentAction();
+		clearRouteTemporaire();
+	}
+
 	public RouteTemporaire getRouteTemporaire() {
 		return routeTemporaire;
 	}
