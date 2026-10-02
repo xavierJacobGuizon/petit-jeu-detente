@@ -10,8 +10,10 @@ import org.jeuroute.configuration.indicators.IndicatorRegistry;
 import org.jeuroute.gamecore.MouseHandler;
 import org.jeuroute.gamecore.hud.Hud;
 import org.jeuroute.gamecore.hud.elements.HudButton;
+import org.jeuroute.gamecore.time.SimulationClock;
 import org.jeuroute.model.records.preview.LinePreview;
 import org.jeuroute.model.records.preview.WorldPreviewData;
+import org.jeuroute.model.records.time.SimulationTick;
 import org.jeuroute.model.world.network.Road;
 import org.jeuroute.model.world.network.RoadGraph;
 import org.jeuroute.model.world.terrain.generation.IslandTerrainGenerator;
@@ -37,6 +39,7 @@ public final class GameManager {
 
 	private final ActionHandlerRegistry actionHandlers = new ActionHandlerRegistry();
 	private final IndicatorRegistry indicatorRegistry = new IndicatorRegistry();
+	private final SimulationClock simulationClock = new SimulationClock();
 
 	private int fps;
 	private final MouseHandlerManager mouseHandlerManager;
@@ -177,13 +180,12 @@ public final class GameManager {
 		return hudManager;
 	}
 
+	public long getCurrentTickNumber() {
+		return simulationClock.currentTickNumber();
+	}
+
 	public void update(double deltaSeconds) {
 		fps = deltaSeconds > 0.0 ? (int) Math.round(1.0 / deltaSeconds) : 0;
-
-		for (Vehicle vehicle : vehicleManager.getVehicles()) {
-			vehicle.update(deltaSeconds);
-		}
-		personManager.update(deltaSeconds);
 
 		mouseHandlerManager.processPendingInput();
 		Point depotPosition = mouseHandlerManager.getMouseHandler().consumeDepotPlacement();
@@ -191,7 +193,15 @@ public final class GameManager {
 			createDepotAt(depotPosition);
 		}
 		synchronizeFixedEntities();
-		worldMap.update(deltaSeconds);
+		simulationClock.advanceSeconds(deltaSeconds, this::updateSimulation);
+	}
+
+	private void updateSimulation(SimulationTick tick) {
+		for (Vehicle vehicle : vehicleManager.getVehicles()) {
+			vehicle.update(tick);
+		}
+		personManager.update(tick);
+		worldMap.update(tick);
 	}
 
 	public void cancelActiveAction() {

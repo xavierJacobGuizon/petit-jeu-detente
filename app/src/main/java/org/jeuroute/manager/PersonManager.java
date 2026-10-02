@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.Random;
 import org.jeuroute.model.records.preview.PlacementPreview;
 import org.jeuroute.model.records.preview.enums.PlacementPreviewType;
+import org.jeuroute.model.records.time.SimulationTick;
 import org.jeuroute.model.world.settlement.House;
 import org.jeuroute.model.world.settlement.Person;
 import org.jeuroute.model.world.terrain.TerrainMap;
@@ -69,6 +70,21 @@ public final class PersonManager {
 					person.beginIdle(nextIdleDuration());
 				}
 			} else if (person.advanceIdle(deltaSeconds)) {
+				if (!startWalkToAnotherHouse(person)) {
+					person.beginIdle(nextIdleDuration());
+				}
+			}
+		}
+	}
+
+	public void update(SimulationTick tick) {
+		Objects.requireNonNull(tick);
+		for (Person person : people) {
+			if (person.isWalking()) {
+				if (person.advanceMovement(tick)) {
+					person.beginIdle(nextIdleDuration());
+				}
+			} else if (person.advanceIdle(tick)) {
 				if (!startWalkToAnotherHouse(person)) {
 					person.beginIdle(nextIdleDuration());
 				}

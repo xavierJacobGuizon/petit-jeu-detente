@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import org.jeuroute.model.records.time.SimulationTick;
 import org.jeuroute.model.world.enums.ResourceType;
 import org.jeuroute.model.world.network.Road;
 import org.jeuroute.model.world.network.RoadGraph;
@@ -106,6 +107,20 @@ public final class ResourceBuildingManager {
 	public void update(double deltaSeconds, List<Station> stations) {
 		for (ResourceBuilding building : buildings) {
 			building.update(deltaSeconds);
+		}
+		for (Station station : stations) {
+			List<ResourceBuilding> capturedBuildings = buildings
+				.stream()
+				.filter(station::canAccess)
+				.toList();
+			station.synchronizeCapturedBuildings(capturedBuildings);
+		}
+	}
+
+	public void update(SimulationTick tick, List<Station> stations) {
+		Objects.requireNonNull(tick);
+		for (ResourceBuilding building : buildings) {
+			building.update(tick);
 		}
 		for (Station station : stations) {
 			List<ResourceBuilding> capturedBuildings = buildings

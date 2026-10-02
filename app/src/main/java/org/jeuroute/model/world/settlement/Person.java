@@ -3,6 +3,7 @@ package org.jeuroute.model.world.settlement;
 import java.awt.Point;
 import java.util.List;
 import java.util.Objects;
+import org.jeuroute.model.records.time.SimulationTick;
 import org.jeuroute.model.world.skin.PersonSkin;
 
 public final class Person {
@@ -16,7 +17,7 @@ public final class Person {
 	private House destinationHouse;
 	private List<Point> waypoints = List.of();
 	private int nextWaypointIndex;
-	private double idleSecondsRemaining;
+	private long idleTicksRemaining;
 
 	public Person(Point position) {
 		Objects.requireNonNull(position, "position cannot be null");
@@ -41,14 +42,14 @@ public final class Person {
 	}
 
 	public double getIdleSecondsRemaining() {
-		return idleSecondsRemaining;
+		return idleTicksRemaining * SimulationTick.STEP_SECONDS;
 	}
 
 	public boolean walkTo(House house, List<Point> route) {
 		destinationHouse = Objects.requireNonNull(house, "house cannot be null");
 		waypoints = route.stream().map(Point::new).toList();
 		nextWaypointIndex = 0;
-		idleSecondsRemaining = 0.0;
+		idleTicksRemaining = 0;
 		return waypoints.isEmpty() && arriveAtDestination();
 	}
 
@@ -80,19 +81,32 @@ public final class Person {
 		return arriveAtDestination();
 	}
 
+	public boolean advanceMovement(SimulationTick tick) {
+		return advanceMovement(Objects.requireNonNull(tick).deltaSeconds());
+	}
+
 	public boolean advanceIdle(double deltaSeconds) {
-		if (idleSecondsRemaining <= 0.0) {
+		return advanceIdleTicks(SimulationTick.ticksForSeconds(Math.max(0.0, deltaSeconds)));
+	}
+
+	public boolean advanceIdle(SimulationTick tick) {
+		Objects.requireNonNull(tick);
+		return advanceIdleTicks(1);
+	}
+
+	private boolean advanceIdleTicks(long elapsedTicks) {
+		if (idleTicksRemaining <= 0) {
 			return true;
 		}
-		idleSecondsRemaining = Math.max(0.0, idleSecondsRemaining - Math.max(0.0, deltaSeconds));
-		return idleSecondsRemaining == 0.0;
+		idleTicksRemaining = Math.max(0, idleTicksRemaining - elapsedTicks);
+		return idleTicksRemaining == 0;
 	}
 
 	public void beginIdle(double seconds) {
 		if (!Double.isFinite(seconds) || seconds < 0.0) {
 			throw new IllegalArgumentException("Idle duration must be finite and non-negative");
 		}
-		idleSecondsRemaining = seconds;
+		idleTicksRemaining = SimulationTick.ticksForSeconds(seconds);
 	}
 
 	public void display(double zoom) {

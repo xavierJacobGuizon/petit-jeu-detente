@@ -3,6 +3,7 @@ package org.jeuroute.model.world.transport;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
+import org.jeuroute.model.records.time.SimulationTick;
 import org.jeuroute.model.records.world.RoadLeg;
 import org.jeuroute.model.records.world.VehicleMotionStep;
 import org.jeuroute.model.world.enums.ResourceType;
@@ -20,7 +21,9 @@ public class Vehicle {
 	public static final double DEFAULT_POWER_WATTS = 900_000.0;
 	public static final int MAX_CARGO_UNITS = 4;
 	public static final double RESOURCE_TRANSFER_SECONDS_PER_UNIT = 0.5;
-	private static final double SIMULATION_STEP_SECONDS = 1.0 / 60.0;
+	private static final long RESOURCE_TRANSFER_TICKS = SimulationTick.ticksForSeconds(
+		RESOURCE_TRANSFER_SECONDS_PER_UNIT
+	);
 	private static final double DISTANCE_EPSILON = 0.000001;
 
 	private final VehicleSkin vehicleSkin;
@@ -32,7 +35,6 @@ public class Vehicle {
 	private final RoadGraph roadGraph;
 	private final List<Point> depotAccessPositions = new ArrayList<>();
 	private double currentSpeed;
-	private double simulationAccumulator;
 
 	private Road road;
 
@@ -56,7 +58,7 @@ public class Vehicle {
 	private int cargoAmount;
 	private Station loadingStation;
 	private ResourceType loadingResourceType;
-	private double resourceTransferAccumulator;
+	private long resourceTransferElapsedTicks;
 	private boolean unloadingResources;
 
 	public Vehicle(
@@ -242,6 +244,26 @@ public class Vehicle {
 	 * @param deltaSeconds Le temps écoulé en secondes depuis la dernière mise à jour.
 	 */
 	public void update(double deltaSeconds) {
+		if (!Double.isFinite(deltaSeconds)) {
+			throw new IllegalArgumentException("Elapsed time must be finite");
+		}
+		synchronizeGraphVersion();
+		if (deltaSeconds <= 0.0) {
+			updateMovement(0.0);
+			return;
+		}
+		long elapsedTicks = SimulationTick.ticksForSeconds(deltaSeconds);
+		for (long elapsedTick = 0; elapsedTick < elapsedTicks; elapsedTick++) {
+			updateMovement(SimulationTick.STEP_SECONDS);
+		}
+	}
+
+	public void update(SimulationTick tick) {
+		synchronizeGraphVersion();
+		updateMovement(tick.deltaSeconds());
+	}
+
+	private void synchronizeGraphVersion() {
 		if (roadGraph.getVersion() != synchronizedGraphVersion) {
 			Point oldTarget = roadPosition == null ? null : roadPosition.getTarget();
 			Point oldDirectionStart = roadPosition == null ? position : roadPosition.getStart();
@@ -268,20 +290,6 @@ public class Vehicle {
 				replanningCurrentLeg = true;
 			}
 			synchronizedGraphVersion = roadGraph.getVersion();
-		}
-
-		advanceSimulation(deltaSeconds);
-	}
-
-	private void advanceSimulation(double deltaSeconds) {
-		if (deltaSeconds <= 0.0) {
-			updateMovement(0.0);
-			return;
-		}
-		simulationAccumulator += deltaSeconds;
-		while (simulationAccumulator + DISTANCE_EPSILON >= SIMULATION_STEP_SECONDS) {
-			updateMovement(SIMULATION_STEP_SECONDS);
-			simulationAccumulator -= SIMULATION_STEP_SECONDS;
 		}
 	}
 
@@ -548,7 +556,7 @@ public class Vehicle {
 
 	private void beginResourceTransfer(Station station) {
 		loadingStation = station;
-		resourceTransferAccumulator = 0.0;
+		resourceTransferElapsedTicks = 0;
 		if (cargoAmount > 0 && station.getAccessibleResourceDemand(cargoType) > 0) {
 			loadingResourceType = cargoType;
 			unloadingResources = true;
@@ -563,10 +571,8 @@ public class Vehicle {
 		if (deltaSeconds <= 0.0) {
 			return;
 		}
-		resourceTransferAccumulator += deltaSeconds;
-		while (
-			resourceTransferAccumulator + DISTANCE_EPSILON >= RESOURCE_TRANSFER_SECONDS_PER_UNIT
-		) {
+		resourceTransferElapsedTicks++;
+		while (resourceTransferElapsedTicks >= RESOURCE_TRANSFER_TICKS) {
 			if (unloadingResources) {
 				if (loadingStation.deliverResources(loadingResourceType, 1) == 0) {
 					clearResourceTransfer();
@@ -587,7 +593,7 @@ public class Vehicle {
 				cargoType = loadingResourceType;
 				cargoAmount++;
 			}
-			resourceTransferAccumulator -= RESOURCE_TRANSFER_SECONDS_PER_UNIT;
+			resourceTransferElapsedTicks -= RESOURCE_TRANSFER_TICKS;
 
 			if (
 				unloadingResources &&
@@ -637,7 +643,7 @@ public class Vehicle {
 	private void clearResourceTransfer() {
 		loadingStation = null;
 		loadingResourceType = null;
-		resourceTransferAccumulator = 0.0;
+		resourceTransferElapsedTicks = 0;
 		unloadingResources = false;
 	}
 

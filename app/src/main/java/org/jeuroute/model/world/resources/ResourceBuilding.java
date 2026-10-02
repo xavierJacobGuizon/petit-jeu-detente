@@ -2,6 +2,7 @@ package org.jeuroute.model.world.resources;
 
 import java.awt.Point;
 import java.util.Objects;
+import org.jeuroute.model.records.time.SimulationTick;
 import org.jeuroute.model.world.enums.ResourceType;
 import org.jeuroute.model.world.skin.ResourceBuildingSkin;
 
@@ -17,8 +18,8 @@ public final class ResourceBuilding {
 	private final ResourceBuildingSkin skin;
 	private int stock;
 	private int receivedResourceStock;
-	private double elapsedSeconds;
-	private double inputConsumptionElapsedSeconds;
+	private long productionElapsedTicks;
+	private long inputConsumptionElapsedTicks;
 
 	public ResourceBuilding(Point position, ResourceType resourceType) {
 		this(position, resourceType, position);
@@ -73,42 +74,57 @@ public final class ResourceBuilding {
 	}
 
 	public void update(double deltaSeconds) {
-		if (deltaSeconds <= 0.0) {
+		advanceTicks(SimulationTick.ticksForSeconds(deltaSeconds));
+	}
+
+	public void update(SimulationTick tick) {
+		Objects.requireNonNull(tick, "tick cannot be null");
+		advanceTicks(1);
+	}
+
+	private void advanceTicks(long elapsedTicks) {
+		if (elapsedTicks <= 0) {
 			return;
 		}
 
-		consumeReceivedResources(deltaSeconds);
+		consumeReceivedResources(elapsedTicks);
 		if (stock >= getStorageCapacity()) {
-			elapsedSeconds = 0.0;
+			productionElapsedTicks = 0;
 			return;
 		}
-		elapsedSeconds += deltaSeconds;
+		productionElapsedTicks += elapsedTicks;
+		long productionIntervalTicks = SimulationTick.ticksForSeconds(
+			resourceType.getProductionIntervalSeconds()
+		);
 		int productionCount = (int) Math.min(
 			getStorageCapacity() - stock,
-			Math.floor(elapsedSeconds / resourceType.getProductionIntervalSeconds())
+			productionElapsedTicks / productionIntervalTicks
 		);
 		stock += productionCount;
-		elapsedSeconds -= productionCount * resourceType.getProductionIntervalSeconds();
+		productionElapsedTicks -= productionCount * productionIntervalTicks;
 		if (stock >= getStorageCapacity()) {
-			elapsedSeconds = 0.0;
+			productionElapsedTicks = 0;
 		}
 	}
 
-	private void consumeReceivedResources(double deltaSeconds) {
+	private void consumeReceivedResources(long elapsedTicks) {
 		if (receivedResourceStock == 0) {
-			inputConsumptionElapsedSeconds = 0.0;
+			inputConsumptionElapsedTicks = 0;
 			return;
 		}
 
-		inputConsumptionElapsedSeconds += deltaSeconds;
+		inputConsumptionElapsedTicks += elapsedTicks;
+		long consumptionIntervalTicks = SimulationTick.ticksForSeconds(
+			INPUT_CONSUMPTION_INTERVAL_SECONDS
+		);
 		int consumptionCount = (int) Math.min(
 			receivedResourceStock,
-			Math.floor(inputConsumptionElapsedSeconds / INPUT_CONSUMPTION_INTERVAL_SECONDS)
+			inputConsumptionElapsedTicks / consumptionIntervalTicks
 		);
 		receivedResourceStock -= consumptionCount;
-		inputConsumptionElapsedSeconds -= consumptionCount * INPUT_CONSUMPTION_INTERVAL_SECONDS;
+		inputConsumptionElapsedTicks -= consumptionCount * consumptionIntervalTicks;
 		if (receivedResourceStock == 0) {
-			inputConsumptionElapsedSeconds = 0.0;
+			inputConsumptionElapsedTicks = 0;
 		}
 	}
 

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
+import org.jeuroute.model.records.time.SimulationTick;
 import org.jeuroute.model.world.network.RoadGraph;
 import org.jeuroute.model.world.terrain.TerrainMap;
 import org.jeuroute.model.world.terrain.generation.IslandTerrainGenerator;
@@ -126,6 +127,10 @@ public final class WorldMap {
 
 	public void update(double deltaSeconds) {
 		resourceBuildingManager.update(deltaSeconds, fixedEntityManager.getStations());
+	}
+
+	public void update(SimulationTick tick) {
+		resourceBuildingManager.update(tick, fixedEntityManager.getStations());
 	}
 
 	public List<Station> getStations() {

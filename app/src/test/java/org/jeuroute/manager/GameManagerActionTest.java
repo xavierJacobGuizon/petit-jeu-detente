@@ -89,4 +89,21 @@ class GameManagerActionTest {
 		gameManager.getActionHandlers().get("toggle-debug").run();
 		assertFalse(gameManager.isDebugModeEnabled());
 	}
+
+	@Test
+	void simulationTickCountIsIndependentOfFrameTimeSlicing() {
+		GameManager singleFrameGame = new GameManager(new Random(42));
+		GameManager slicedFrameGame = new GameManager(new Random(42));
+
+		singleFrameGame.update(1.0);
+		for (int frame = 0; frame < 8; frame++) {
+			slicedFrameGame.update(0.125);
+		}
+
+		assertEquals(60, singleFrameGame.getCurrentTickNumber());
+		assertEquals(
+			singleFrameGame.getCurrentTickNumber(),
+			slicedFrameGame.getCurrentTickNumber()
+		);
+	}
 }
