@@ -8,10 +8,10 @@ import java.util.Random;
 import org.jeuroute.configuration.actions.ActionHandlerRegistry;
 import org.jeuroute.configuration.indicators.IndicatorRegistry;
 import org.jeuroute.gamecore.MouseHandler;
-import org.jeuroute.gamecore.WorldRenderer;
 import org.jeuroute.gamecore.hud.Hud;
 import org.jeuroute.gamecore.hud.elements.HudButton;
 import org.jeuroute.model.records.preview.LinePreview;
+import org.jeuroute.model.records.preview.WorldPreviewData;
 import org.jeuroute.model.world.network.Road;
 import org.jeuroute.model.world.network.RoadGraph;
 import org.jeuroute.model.world.terrain.generation.IslandTerrainGenerator;
@@ -32,6 +32,7 @@ public final class GameManager {
 
 	private final WorldMap worldMap;
 	private final VehicleManager vehicleManager;
+	private final PersonManager personManager;
 	private final LineManager lineManager;
 
 	private final ActionHandlerRegistry actionHandlers = new ActionHandlerRegistry();
@@ -59,13 +60,19 @@ public final class GameManager {
 	public GameManager(TerrainGenerator terrainGenerator, Random random) {
 		worldMap = new WorldMap(terrainGenerator, Objects.requireNonNull(random));
 		vehicleManager = new VehicleManager(worldMap.getRoadGraph());
+		personManager = new PersonManager(
+			worldMap.getTerrainMap(),
+			worldMap.getHouseManager().getHouses(),
+			random
+		);
 		lineManager = new LineManager(worldMap.getRoadGraph());
 		mouseHandlerManager = new MouseHandlerManager(
 			worldMap.getRoadGraph(),
 			new MouseHandler(),
 			vehicleManager,
 			worldMap.getFixedEntityManager(),
-			this::handleLineStationSelection
+			this::handleLineStationSelection,
+			personManager
 		);
 		lineCreationController = new LineCreationController(
 			worldMap.getFixedEntityManager(),
@@ -115,6 +122,10 @@ public final class GameManager {
 
 	public VehicleManager getVehicleManager() {
 		return vehicleManager;
+	}
+
+	public PersonManager getPersonManager() {
+		return personManager;
 	}
 
 	public LineManager getLineManager() {
@@ -167,6 +178,7 @@ public final class GameManager {
 		for (Vehicle vehicle : vehicleManager.getVehicles()) {
 			vehicle.update(deltaSeconds);
 		}
+		personManager.update(deltaSeconds);
 
 		mouseHandlerManager.processPendingInput();
 		Point depotPosition = mouseHandlerManager.getMouseHandler().consumeDepotPlacement();
@@ -185,14 +197,15 @@ public final class GameManager {
 		}
 	}
 
-	public void renderDragLine() {
-		renderDragLine(1.0);
-	}
-
-	public void renderDragLine(double zoom) {
-		mouseHandlerManager.renderDragLine(zoom);
-		mouseHandlerManager.renderPlacementPreview(zoom);
-		WorldRenderer.renderLinePreview(getLinePreview(), zoom);
+	public WorldPreviewData getWorldPreviewData() {
+		var placement = mouseHandlerManager.getPlacementPreview();
+		return new WorldPreviewData(
+			mouseHandlerManager.getRouteSnapPoint(),
+			mouseHandlerManager.getRoutePreview(),
+			mouseHandlerManager.getStationRoadPreview(placement),
+			placement,
+			getLinePreview()
+		);
 	}
 
 	public LinePreview getLinePreview() {
@@ -301,5 +314,9 @@ public final class GameManager {
 			() -> Integer.toString(vehicleManager.getVehicles().size()),
 			() -> Integer.toString(worldMap.getStations().size())
 		);
+		actionHandlers.register("toggle-person", () -> {
+			MouseHandler handler = mouseHandlerManager.getMouseHandler();
+			handler.setPersonCreationEnabled(!handler.isPersonCreationEnabled());
+		});
 	}
 }

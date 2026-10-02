@@ -5,11 +5,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import org.jeuroute.gamecore.MouseHandler;
-import org.jeuroute.gamecore.WorldRenderer;
 import org.jeuroute.model.records.preview.PlacementPreview;
+import org.jeuroute.model.records.preview.RoutePreview;
 import org.jeuroute.model.records.preview.enums.PlacementPreviewType;
+import org.jeuroute.model.world.network.Road;
 import org.jeuroute.model.world.network.RoadGraph;
-import org.jeuroute.model.world.network.RouteTemporaire;
 import org.jeuroute.model.world.transport.Station;
 
 public class MouseHandlerManager {
@@ -19,7 +19,7 @@ public class MouseHandlerManager {
 	private final VehicleManager vehicleManager;
 	private final FixedEntityManager fixedEntityManager;
 	private final Consumer<Point> lineStationSelectionHandler;
-	private RouteTemporaire routeTemporaire;
+	private final PersonManager personManager;
 
 	public MouseHandlerManager(
 		RoadGraph graph,
@@ -28,10 +28,29 @@ public class MouseHandlerManager {
 		FixedEntityManager fixedEntityManager,
 		Consumer<Point> lineStationSelectionHandler
 	) {
+		this(
+			graph,
+			mouseHandler,
+			vehicleManager,
+			fixedEntityManager,
+			lineStationSelectionHandler,
+			null
+		);
+	}
+
+	public MouseHandlerManager(
+		RoadGraph graph,
+		MouseHandler mouseHandler,
+		VehicleManager vehicleManager,
+		FixedEntityManager fixedEntityManager,
+		Consumer<Point> lineStationSelectionHandler,
+		PersonManager personManager
+	) {
 		this.graph = graph;
 		this.mouseHandler = mouseHandler;
 		this.vehicleManager = vehicleManager;
 		this.fixedEntityManager = fixedEntityManager;
+		this.personManager = personManager;
 		this.lineStationSelectionHandler = Objects.requireNonNull(
 			lineStationSelectionHandler,
 			"lineStationSelectionHandler cannot be null"
@@ -44,11 +63,6 @@ public class MouseHandlerManager {
 
 	public void cancelCurrentAction() {
 		mouseHandler.cancelCurrentAction();
-		clearRouteTemporaire();
-	}
-
-	public RouteTemporaire getRouteTemporaire() {
-		return routeTemporaire;
 	}
 
 	public Point getRouteSnapPoint() {
@@ -78,14 +92,6 @@ public class MouseHandlerManager {
 		return graph.getIntersectionsAfterAddingRoad(start, end);
 	}
 
-	public void setRouteTemporaire(RouteTemporaire routeTemporaire) {
-		this.routeTemporaire = routeTemporaire;
-	}
-
-	public void clearRouteTemporaire() {
-		this.routeTemporaire = null;
-	}
-
 	/**
 	 * Traite les entrées en attente du gestionnaire de souris,
 	 * y compris la création de routes, de véhicules, de stations et la sélection de stations pour les lignes.
@@ -94,6 +100,7 @@ public class MouseHandlerManager {
 		createRoadAfterDrag();
 		createVehicleAfterClick();
 		createStationAfterClick();
+		createPersonAfterClick();
 		selectLineStationAfterClick();
 	}
 
@@ -112,16 +119,9 @@ public class MouseHandlerManager {
 			return;
 		}
 
-		if (routeTemporaire == null) {
-			routeTemporaire = new RouteTemporaire(start, end);
-		} else {
-			routeTemporaire.updateEnd(end);
-		}
-
 		if (canPlaceRoute(start, end)) {
-			graph.addRoad(routeTemporaire.toRoad());
+			graph.addRoad(new Road(start, end));
 		}
-		clearRouteTemporaire();
 	}
 
 	private void createVehicleAfterClick() {
@@ -143,6 +143,13 @@ public class MouseHandlerManager {
 		graph.addStationNode(station.getPosition());
 	}
 
+	private void createPersonAfterClick() {
+		Point position = mouseHandler.consumePersonPlacement();
+		if (position != null && personManager != null) {
+			personManager.addPerson(position);
+		}
+	}
+
 	private void selectLineStationAfterClick() {
 		Point position = mouseHandler.consumeLineStationSelection();
 		if (position != null) {
@@ -150,36 +157,25 @@ public class MouseHandlerManager {
 		}
 	}
 
-	public void renderDragLine() {
-		renderDragLine(1.0);
-	}
-
-	public void renderDragLine(double zoom) {
-		WorldRenderer.renderRoadSnapIndicator(getRouteSnapPoint(), zoom);
+	public RoutePreview getRoutePreview() {
 		if (!mouseHandler.isDragging() || mouseHandler.getDragStart() == null) {
-			return;
+			return null;
 		}
 
 		Point start = graph.snapRoutePoint(mouseHandler.getDragStart());
 		Point end = graph.snapRoutePoint(mouseHandler.getCurrentDragEnd());
-		if (start != null && end != null) {
-			if (routeTemporaire == null) {
-				routeTemporaire = new RouteTemporaire(start, end);
-			} else {
-				routeTemporaire.updateEnd(end);
-			}
-			boolean valid = canPlaceRoute(start, end);
-			if (valid) {
-				WorldRenderer.renderRoutePlacementPreview(
-					graph.getRoadSegmentsAfterAddingRoad(start, end),
-					zoom
-				);
-			} else {
-				routeTemporaire.display(false, zoom);
-			}
-			WorldRenderer.renderRoadSnapIndicator(getRouteSnapPoint(), zoom);
-			WorldRenderer.renderFutureIntersections(getFutureRouteIntersections());
+		if (start == null || end == null) {
+			return null;
 		}
+
+		boolean valid = canPlaceRoute(start, end);
+		List<Road> roadSegments = valid
+			? graph.getRoadSegmentsAfterAddingRoad(start, end)
+			: List.of();
+		List<Point> futureIntersections = valid
+			? graph.getIntersectionsAfterAddingRoad(start, end)
+			: List.of();
+		return new RoutePreview(start, end, valid, roadSegments, futureIntersections);
 	}
 
 	private boolean canPlaceRoute(Point start, Point end) {
@@ -208,22 +204,16 @@ public class MouseHandlerManager {
 		if (type == PlacementPreviewType.DEPOT) {
 			return fixedEntityManager.getDepotPlacementPreview(mousePosition);
 		}
+		if (type == PlacementPreviewType.PERSON && personManager != null) {
+			return personManager.getPlacementPreview(mousePosition);
+		}
 		return null;
 	}
 
-	public void renderPlacementPreview() {
-		renderPlacementPreview(1.0);
-	}
-
-	public void renderPlacementPreview(double zoom) {
-		PlacementPreview preview = getPlacementPreview();
-		if (preview != null && preview.type() == PlacementPreviewType.STATION) {
-			WorldRenderer.renderStationRoadPreview(
-				graph.getRoadSegmentsAfterAddingStation(preview.position()),
-				preview.valid(),
-				zoom
-			);
+	public List<Road> getStationRoadPreview(PlacementPreview preview) {
+		if (preview == null || preview.type() != PlacementPreviewType.STATION) {
+			return List.of();
 		}
-		WorldRenderer.renderPlacementPreview(preview, zoom);
+		return graph.getRoadSegmentsAfterAddingStation(preview.position());
 	}
 }

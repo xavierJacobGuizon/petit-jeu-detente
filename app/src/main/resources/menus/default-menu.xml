@@ -2,4 +2,5 @@
     <button id="vehicle" label="VEHICULE" action="toggle-vehicle" />
     <button id="station" label="STATION" action="toggle-station" />
     <button id="depot" label="DEPOT" action="toggle-depot" />
+    <button id="person" label="PERSONNE" action="toggle-person" />
 </menu>

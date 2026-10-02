@@ -4,10 +4,12 @@ import static org.lwjgl.opengl.GL11.*;
 
 import org.jeuroute.gamecore.GameLoop;
 import org.jeuroute.gamecore.GameWindow;
+import org.jeuroute.gamecore.WorldPreviewRenderer;
 import org.jeuroute.gamecore.WorldRenderer;
 import org.jeuroute.gamecore.camera.Camera2D;
 import org.jeuroute.gamecore.hud.presentation.HudRenderer;
 import org.jeuroute.manager.GameManager;
+import org.jeuroute.model.records.world.WorldRenderData;
 import org.lwjgl.opengl.GL;
 
 public class App {
@@ -16,6 +18,18 @@ public class App {
 	private final Camera2D camera = new Camera2D(640.0, 360.0);
 	private final GameLoop loop = new GameLoop();
 	private final GameManager gameManager = new GameManager();
+	private final WorldRenderData worldRenderData = new WorldRenderData(
+		gameManager.getWorldMap().getTerrainMap(),
+		gameManager.getRoadGraph().getRoads(),
+		gameManager.getWorldMap().getResourceBuildingManager().getBuildings(),
+		gameManager.getWorldMap().getHouseManager().getHouses(),
+		gameManager.getLineManager().getLines(),
+		gameManager.getFixedEntityManager().getIntersections(),
+		gameManager.getFixedEntityManager().getStations(),
+		gameManager.getDepots(),
+		gameManager.getVehicleManager().getVehicles(),
+		gameManager.getPersonManager().getPeople()
+	);
 
 	public App() {
 		window.setCamera(camera);
@@ -70,21 +84,11 @@ public class App {
 		glPushMatrix();
 		camera.apply(window.getWidth(), window.getHeight());
 
-		WorldRenderer.renderTerrain(gameManager.getWorldMap().getTerrainMap(), camera.getZoom());
-		WorldRenderer.renderRoads(gameManager.getRoadGraph().getRoads(), camera.getZoom());
-		WorldRenderer.renderResourceBuildings(
-			gameManager.getWorldMap().getResourceBuildingManager().getBuildings(),
+		WorldRenderer.renderWorld(worldRenderData, camera.getZoom());
+		WorldPreviewRenderer.renderWorldPreviews(
+			gameManager.getWorldPreviewData(),
 			camera.getZoom()
 		);
-		WorldRenderer.renderLines(gameManager.getLineManager().getLines(), camera.getZoom());
-		WorldRenderer.renderIntersections(gameManager.getFixedEntityManager().getIntersections());
-		WorldRenderer.renderStations(
-			gameManager.getFixedEntityManager().getStations(),
-			camera.getZoom()
-		);
-		WorldRenderer.renderDepots(gameManager.getDepots(), camera.getZoom());
-		WorldRenderer.renderVehicles(gameManager.getVehicleManager().getVehicles());
-		gameManager.renderDragLine(camera.getZoom());
 		glPopMatrix();
 		glLoadIdentity();
 

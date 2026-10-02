@@ -4,4 +4,5 @@ public enum PlacementPreviewType {
 	VEHICLE,
 	STATION,
 	DEPOT,
+	PERSON,
 }

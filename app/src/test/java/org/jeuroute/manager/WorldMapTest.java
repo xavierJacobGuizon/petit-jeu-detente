@@ -12,6 +12,7 @@ import java.util.Random;
 import org.jeuroute.model.world.enums.ResourceType;
 import org.jeuroute.model.world.network.Road;
 import org.jeuroute.model.world.resources.ResourceBuilding;
+import org.jeuroute.model.world.settlement.House;
 import org.jeuroute.model.world.terrain.TerrainMap;
 import org.jeuroute.model.world.transport.Depot;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,10 @@ class WorldMapTest {
 			ResourceBuildingManager.INITIAL_BUILDING_COUNT,
 			worldMap.getResourceBuildingManager().getBuildings().size()
 		);
+		assertEquals(
+			HouseManager.INITIAL_HOUSE_COUNT,
+			worldMap.getHouseManager().getHouses().size()
+		);
 		assertTrue(!worldMap.getRoadGraph().getRoads().isEmpty());
 		EnumSet<ResourceType> generatedTypes = EnumSet.noneOf(ResourceType.class);
 		for (ResourceBuilding building : worldMap.getResourceBuildingManager().getBuildings()) {
@@ -39,6 +44,10 @@ class WorldMapTest {
 		assertEquals(
 			ResourceBuildingManager.INITIAL_BUILDING_COUNT,
 			worldMap.getResourceBuildingManager().getBuildings().size()
+		);
+		assertEquals(
+			HouseManager.INITIAL_HOUSE_COUNT,
+			worldMap.getHouseManager().getHouses().size()
 		);
 	}
 
@@ -92,6 +101,13 @@ class WorldMapTest {
 					.getRoadGraph()
 					.findPath(networkStart, building.getAccessPosition())
 					.isPresent()
+			);
+		}
+		for (House house : firstMap.getHouseManager().getHouses()) {
+			assertTrue(firstMap.getTerrainMap().isLand(house.getPosition()));
+			assertTrue(
+				firstMap.getRoadGraph().findRoadNear(house.getPosition(), House.HALF_SIZE - 1.0) ==
+					null
 			);
 		}
 	}

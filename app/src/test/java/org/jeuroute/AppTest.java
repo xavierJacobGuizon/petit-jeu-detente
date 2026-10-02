@@ -111,8 +111,9 @@ class AppTest {
 		MenuDefinition sameMenu = cache.getOrLoad("menus/default-menu.xml");
 
 		assertEquals("MENU", menu.label());
-		assertEquals(3, menu.children().size());
+		assertEquals(4, menu.children().size());
 		assertEquals("VEHICULE", menu.children().get(0).label());
+		assertEquals("PERSONNE", menu.children().get(3).label());
 		assertSame(menu, sameMenu);
 	}
 

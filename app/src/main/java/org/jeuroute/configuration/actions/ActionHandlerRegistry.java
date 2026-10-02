@@ -26,7 +26,10 @@ public final class ActionHandlerRegistry implements Registry<Runnable> {
 				mouseHandler.setStationCreationEnabled(!mouseHandler.isStationCreationEnabled())
 			)
 			.register("toggle-line", toggleLineCreation)
-			.register("toggle-depot", toggleDepotCreation);
+			.register("toggle-depot", toggleDepotCreation)
+			.register("toggle-person", () ->
+				mouseHandler.setPersonCreationEnabled(!mouseHandler.isPersonCreationEnabled())
+			);
 	}
 
 	public ActionHandlerRegistry register(String actionId, Runnable handler) {

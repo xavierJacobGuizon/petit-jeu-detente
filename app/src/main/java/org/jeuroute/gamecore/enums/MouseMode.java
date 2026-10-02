@@ -7,4 +7,5 @@ public enum MouseMode {
 	STATION,
 	DEPOT,
 	LINE,
+	PERSON,
 }

@@ -20,6 +20,7 @@ public class MouseHandler {
 	private Point pendingStationPosition;
 	private Point pendingDepotPosition;
 	private Point pendingLineStationSelection;
+	private Point pendingPersonPosition;
 
 	public void onMove(double x, double y) {
 		mousePosition = new Point((int) Math.round(x), (int) Math.round(y));
@@ -37,10 +38,17 @@ public class MouseHandler {
 			case STATION -> onStationPlacement(x, y);
 			case DEPOT -> onDepotPlacement(x, y);
 			case LINE -> onLineStationSelection(x, y);
+			case PERSON -> onPersonPlacement(x, y);
 			case VEHICLE -> onVehiclePlacement(x, y);
 			case ROUTE -> onRoutePlacement(x, y);
 			case NONE -> {
 			}
+		}
+	}
+
+	public void onPersonPlacement(double x, double y) {
+		if (activeMode == MouseMode.PERSON) {
+			pendingPersonPosition = new Point((int) Math.round(x), (int) Math.round(y));
 		}
 	}
 
@@ -106,6 +114,14 @@ public class MouseHandler {
 		return activeMode == MouseMode.LINE;
 	}
 
+	public void setPersonCreationEnabled(boolean enabled) {
+		setActiveMode(MouseMode.PERSON, enabled);
+	}
+
+	public boolean isPersonCreationEnabled() {
+		return activeMode == MouseMode.PERSON;
+	}
+
 	public boolean isStationCreationEnabled() {
 		return activeMode == MouseMode.STATION;
 	}
@@ -130,6 +146,7 @@ public class MouseHandler {
 		pendingStationPosition = null;
 		pendingDepotPosition = null;
 		pendingLineStationSelection = null;
+		pendingPersonPosition = null;
 	}
 
 	private void setActiveMode(MouseMode mode, boolean enabled) {
@@ -151,6 +168,7 @@ public class MouseHandler {
 			case VEHICLE -> PlacementPreviewType.VEHICLE;
 			case STATION -> PlacementPreviewType.STATION;
 			case DEPOT -> PlacementPreviewType.DEPOT;
+			case PERSON -> PlacementPreviewType.PERSON;
 			default -> null;
 		};
 	}
@@ -175,6 +193,12 @@ public class MouseHandler {
 		Point selection = pendingLineStationSelection;
 		pendingLineStationSelection = null;
 		return selection;
+	}
+
+	public Point consumePersonPlacement() {
+		Point placement = pendingPersonPosition;
+		pendingPersonPosition = null;
+		return placement;
 	}
 
 	public void onRelease(int button, double x, double y) {

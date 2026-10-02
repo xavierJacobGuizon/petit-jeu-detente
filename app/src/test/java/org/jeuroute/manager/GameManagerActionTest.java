@@ -1,11 +1,16 @@
 package org.jeuroute.manager;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.awt.Point;
+import java.util.Random;
 import org.jeuroute.gamecore.MouseHandler;
 import org.jeuroute.gamecore.hud.Hud;
+import org.jeuroute.gamecore.hud.presentation.HudLayout;
 import org.junit.jupiter.api.Test;
 
 class GameManagerActionTest {
@@ -38,5 +43,33 @@ class GameManagerActionTest {
 
 		assertFalse(mouseHandler.isVehicleCreationEnabled());
 		assertNull(mouseHandler.consumeVehiclePlacement());
+	}
+
+	@Test
+	void personCanBePlacedFromTheBuildMenuAndGetsAHouseDestination() {
+		GameManager gameManager = new GameManager(new Random(42));
+		Hud hud = gameManager.getHud();
+		MouseHandler mouseHandler = gameManager.getMouseHandlerManager().getMouseHandler();
+
+		var menuBounds = HudLayout.rootButtonBounds(0, 1280, 720);
+		assertTrue(hud.handleClick(menuBounds.x() + 10, menuBounds.y() + 10, 1280, 720));
+		var personButtonBounds = HudLayout.submenuButtonBounds(0, 3, 1280, 720);
+		assertTrue(
+			hud.handleClick(personButtonBounds.x() + 10, personButtonBounds.y() + 10, 1280, 720)
+		);
+		assertTrue(mouseHandler.isPersonCreationEnabled());
+
+		Point dropPosition = new Point(650, 375);
+		mouseHandler.onPersonPlacement(dropPosition.x, dropPosition.y);
+		gameManager.update(0.0);
+
+		assertEquals(1, gameManager.getPersonManager().getPeople().size());
+		assertNotNull(gameManager.getPersonManager().getPeople().getFirst().getDestinationHouse());
+		assertTrue(
+			gameManager
+				.getWorldMap()
+				.getTerrainMap()
+				.isLand(gameManager.getPersonManager().getPeople().getFirst().getPosition())
+		);
 	}
 }

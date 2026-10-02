@@ -5,12 +5,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Point;
+import java.util.List;
 import java.util.Random;
 import org.jeuroute.manager.WorldMap;
 import org.jeuroute.model.world.enums.TerrainType;
 import org.jeuroute.model.world.network.RoadGraph;
 import org.jeuroute.model.world.terrain.generation.IslandTerrainGenerator;
 import org.jeuroute.model.world.terrain.generation.TerrainGenerator;
+import org.jeuroute.model.world.terrain.navigation.TerrainPathfinder;
 import org.junit.jupiter.api.Test;
 
 class TerrainMapTest {
@@ -76,5 +78,33 @@ class TerrainMapTest {
 
 		assertEquals(TerrainType.ISLAND, worldMap.getTerrainMap().getType());
 		assertEquals(landCellCount, worldMap.getTerrainMap().getLandCellCount());
+	}
+
+	@Test
+	void pathfinderDetoursAroundWaterAndKeepsEveryWaypointOnLand() {
+		boolean[][] land = new boolean[TerrainMap.ROWS][TerrainMap.COLUMNS];
+		for (int row = 10; row <= 16; row++) {
+			for (int column = 10; column <= 20; column++) {
+				land[row][column] = true;
+			}
+		}
+		for (int row = 10; row < 16; row++) {
+			land[row][15] = false;
+		}
+		TerrainMap terrain = new TerrainMap(TerrainType.ISLAND, land);
+		TerrainPathfinder pathfinder = new TerrainPathfinder(terrain);
+		Point start = new Point(TerrainMap.gridX(12) + 12, TerrainMap.gridY(12) + 12);
+		Point destination = new Point(TerrainMap.gridX(18) + 12, TerrainMap.gridY(12) + 12);
+
+		List<Point> path = pathfinder.findPath(start, destination, new Random(4));
+
+		assertFalse(path.isEmpty());
+		Point previous = start;
+		for (Point waypoint : path) {
+			assertTrue(terrain.isLand(waypoint));
+			assertTrue(terrain.containsSegment(previous, waypoint));
+			previous = waypoint;
+		}
+		assertEquals(destination, path.getLast());
 	}
 }

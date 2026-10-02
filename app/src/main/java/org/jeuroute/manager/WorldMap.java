@@ -21,6 +21,7 @@ public final class WorldMap {
 	private final RoadGraph roadGraph;
 	private final FixedEntityManager fixedEntityManager;
 	private final ResourceBuildingManager resourceBuildingManager;
+	private final HouseManager houseManager;
 	private long synchronizedGraphVersion = -1;
 	private boolean defaultLayoutInitialized;
 
@@ -52,6 +53,7 @@ public final class WorldMap {
 		roadGraph = new RoadGraph(terrainMap);
 		fixedEntityManager = new FixedEntityManager(roadGraph);
 		resourceBuildingManager = new ResourceBuildingManager(random);
+		houseManager = new HouseManager(random);
 	}
 
 	public RoadGraph getRoadGraph() {
@@ -64,6 +66,10 @@ public final class WorldMap {
 
 	public ResourceBuildingManager getResourceBuildingManager() {
 		return resourceBuildingManager;
+	}
+
+	public HouseManager getHouseManager() {
+		return houseManager;
 	}
 
 	public TerrainMap getTerrainMap() {
@@ -82,6 +88,12 @@ public final class WorldMap {
 			terrainMap,
 			roadGraph,
 			fixedEntityManager.getDepots()
+		);
+		houseManager.generateInitialHouses(
+			terrainMap,
+			roadGraph,
+			fixedEntityManager.getDepots(),
+			resourceBuildingManager.getBuildings()
 		);
 		synchronizeGraphEntities();
 		defaultLayoutInitialized = true;
