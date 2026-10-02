@@ -5,11 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jeuroute.model.records.world.RoadLeg;
 import org.jeuroute.model.records.world.VehicleMotionStep;
+import org.jeuroute.model.world.enums.ResourceType;
 import org.jeuroute.model.world.network.Road;
 import org.jeuroute.model.world.network.RoadGraph;
 import org.jeuroute.model.world.network.RoadPath;
 import org.jeuroute.model.world.network.RoadPosition;
-import org.jeuroute.model.world.enums.ResourceType;
 import org.jeuroute.model.world.skin.VehicleSkin;
 import org.jeuroute.utils.GeometryUtils;
 
@@ -157,6 +157,13 @@ public class Vehicle {
 
 	public Point getTarget() {
 		return roadPosition == null ? null : roadPosition.getTarget();
+	}
+
+	public Point getDestination() {
+		if (activePath == null || activePath.isEmpty()) {
+			return null;
+		}
+		return activePath.getLegs().getLast().target();
 	}
 
 	public TransitLine getAssignedLine() {

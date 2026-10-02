@@ -72,4 +72,21 @@ class GameManagerActionTest {
 				.isLand(gameManager.getPersonManager().getPeople().getFirst().getPosition())
 		);
 	}
+
+	@Test
+	void debugModeCanBeToggledFromTheDefaultMenu() {
+		GameManager gameManager = new GameManager(new Random(42));
+		Hud hud = gameManager.getHud();
+
+		var menuBounds = HudLayout.rootButtonBounds(0, 1280, 720);
+		assertTrue(hud.handleClick(menuBounds.x() + 10, menuBounds.y() + 10, 1280, 720));
+		var debugButtonBounds = HudLayout.submenuButtonBounds(0, 4, 1280, 720);
+		assertTrue(
+			hud.handleClick(debugButtonBounds.x() + 10, debugButtonBounds.y() + 10, 1280, 720)
+		);
+
+		assertTrue(gameManager.isDebugModeEnabled());
+		gameManager.getActionHandlers().get("toggle-debug").run();
+		assertFalse(gameManager.isDebugModeEnabled());
+	}
 }

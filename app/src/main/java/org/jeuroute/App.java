@@ -4,6 +4,7 @@ import static org.lwjgl.opengl.GL11.*;
 
 import org.jeuroute.gamecore.GameLoop;
 import org.jeuroute.gamecore.GameWindow;
+import org.jeuroute.gamecore.WorldDebugRenderer;
 import org.jeuroute.gamecore.WorldPreviewRenderer;
 import org.jeuroute.gamecore.WorldRenderer;
 import org.jeuroute.gamecore.camera.Camera2D;
@@ -89,6 +90,9 @@ public class App {
 			gameManager.getWorldPreviewData(),
 			camera.getZoom()
 		);
+		if (gameManager.isDebugModeEnabled()) {
+			WorldDebugRenderer.renderDestinations(worldRenderData, camera.getZoom());
+		}
 		glPopMatrix();
 		glLoadIdentity();
 

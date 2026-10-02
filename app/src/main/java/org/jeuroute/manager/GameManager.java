@@ -44,6 +44,7 @@ public final class GameManager {
 	private final LineVehicleDialogController lineVehicleDialogController;
 
 	private final HudManager hudManager;
+	private boolean debugModeEnabled;
 
 	public GameManager() {
 		this(new IslandTerrainGenerator(), new Random());
@@ -126,6 +127,10 @@ public final class GameManager {
 
 	public PersonManager getPersonManager() {
 		return personManager;
+	}
+
+	public boolean isDebugModeEnabled() {
+		return debugModeEnabled;
 	}
 
 	public LineManager getLineManager() {
@@ -318,5 +323,6 @@ public final class GameManager {
 			MouseHandler handler = mouseHandlerManager.getMouseHandler();
 			handler.setPersonCreationEnabled(!handler.isPersonCreationEnabled());
 		});
+		actionHandlers.register("toggle-debug", () -> debugModeEnabled = !debugModeEnabled);
 	}
 }
