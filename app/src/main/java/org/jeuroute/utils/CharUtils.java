@@ -244,6 +244,7 @@ public class CharUtils {
 			case 'Y' -> new int[][] { { 2, 0, 6, 7 }, { 10, 0, 6, 7 }, { 6, 7, 6, 14 } };
 			case 'Z' -> new int[][] { { 2, 0, 10, 0 }, { 10, 0, 2, 14 }, { 2, 14, 10, 14 } };
 			case '.' -> new int[][] { { 6, 13, 7, 14 } };
+			case '-' -> new int[][] { { 2, 7, 10, 7 } };
 			default -> null;
 		};
 	}

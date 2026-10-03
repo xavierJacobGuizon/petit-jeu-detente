@@ -75,19 +75,14 @@ class GameManagerActionTest {
 	}
 
 	@Test
-	void debugModeCanBeToggledFromTheDefaultMenu() {
+	void debugWindowActionInvokesTheRegisteredWindowHandler() {
 		GameManager gameManager = new GameManager(new Random(42));
-		Hud hud = gameManager.getHud();
+		int[] invocationCount = { 0 };
+		gameManager.setDebugWindowCreationHandler(() -> invocationCount[0]++);
 
-		var menuBounds = HudLayout.rootButtonBounds(0, 1280, 720);
-		assertTrue(hud.handleClick(menuBounds.x() + 10, menuBounds.y() + 10, 1280, 720));
-		var debugButtonBounds = HudLayout.submenuButtonBounds(0, 4, 1280, 720);
-		assertTrue(
-			hud.handleClick(debugButtonBounds.x() + 10, debugButtonBounds.y() + 10, 1280, 720)
-		);
+		gameManager.getActionHandlers().get("create-debug-window").run();
 
-		assertTrue(gameManager.isDebugModeEnabled());
-		gameManager.getActionHandlers().get("toggle-debug").run();
+		assertEquals(1, invocationCount[0]);
 		assertFalse(gameManager.isDebugModeEnabled());
 	}
 

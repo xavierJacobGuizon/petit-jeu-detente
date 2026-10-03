@@ -48,21 +48,4 @@ class PerformanceProfilerTest {
 		assertFalse(profiler.refreshSnapshot(999_999_999L));
 		assertTrue(profiler.refreshSnapshot(1_000_000_000L));
 	}
-
-	@Test
-	void alignsMetricColumnsWhenMaximumHasMoreDigits() {
-		PerformanceProfiler profiler = new PerformanceProfiler();
-		profiler.recordAt(PerformanceProfiler.Section.FRAME, 1L, 1_000_000L);
-		profiler.recordAt(PerformanceProfiler.Section.FRAME, 2L, 20_000_000L);
-		profiler.recordAt(PerformanceProfiler.Section.FRAME, 3L, 1_000_000_000L);
-		profiler.refreshSnapshot(3L);
-
-		String line = profiler.displayLines()[PerformanceProfiler.Section.FRAME.ordinal() + 1];
-		int averageDecimal = line.indexOf('.');
-		int percentileDecimal = line.indexOf('.', averageDecimal + 1);
-		int maximumDecimal = line.indexOf('.', percentileDecimal + 1);
-
-		assertEquals(averageDecimal, percentileDecimal);
-		assertEquals(percentileDecimal, maximumDecimal);
-	}
 }

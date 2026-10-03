@@ -2,39 +2,39 @@ package org.jeuroute;
 
 import static org.lwjgl.opengl.GL11.*;
 
+import org.jeuroute.gamecore.GameInputController;
 import org.jeuroute.gamecore.GameLoop;
 import org.jeuroute.gamecore.GameWindow;
 import org.jeuroute.gamecore.PerformanceProfiler;
 import org.jeuroute.gamecore.PersonMeshRenderer;
-import org.jeuroute.gamecore.WorldDebugMeshRenderer;
-import org.jeuroute.gamecore.WorldDebugRenderer;
+import org.jeuroute.gamecore.WindowMetrics;
+import org.jeuroute.gamecore.WorldDebugOverlay;
 import org.jeuroute.gamecore.WorldPreviewRenderer;
 import org.jeuroute.gamecore.WorldRenderer;
+import org.jeuroute.gamecore.WorldViewport;
 import org.jeuroute.gamecore.camera.Camera2D;
 import org.jeuroute.gamecore.camera.WorldViewBounds;
+import org.jeuroute.gamecore.hud.HudWindowManager;
+import org.jeuroute.gamecore.hud.HudWindowSpec;
+import org.jeuroute.gamecore.hud.presentation.DebugProfilerWindowContent;
 import org.jeuroute.gamecore.hud.presentation.HudRenderer;
-import org.jeuroute.gamecore.hud.presentation.PerformanceProfilerRenderer;
+import org.jeuroute.gamecore.hud.presentation.HudWindowRenderer;
 import org.jeuroute.manager.GameManager;
 import org.jeuroute.model.records.world.WorldRenderData;
 import org.lwjgl.opengl.GL;
 
 public class App {
 
-	private static final long DEBUG_REFRESH_TICKS = 60;
-	private static final long DEBUG_VIEW_REFRESH_TICKS = 30;
-
 	private final GameWindow window = new GameWindow(1280, 720, "Route Runner");
 	private final Camera2D camera = new Camera2D(640.0, 360.0);
 	private final GameLoop loop = new GameLoop();
+	private final HudWindowManager hudWindowManager = new HudWindowManager();
+	private final HudWindowRenderer hudWindowRenderer = new HudWindowRenderer();
 	private final GameManager gameManager = new GameManager();
-	private final PerformanceProfilerRenderer performanceProfilerRenderer =
-		new PerformanceProfilerRenderer();
+	private final WorldViewport worldViewport = new WorldViewport();
+	private WorldDebugOverlay worldDebugOverlay;
 	private long frameStartedAtNanos;
 	private PersonMeshRenderer personMeshRenderer;
-	private WorldDebugMeshRenderer worldDebugMeshRenderer;
-	private long lastDebugRefreshTick = -1;
-	private WorldViewBounds lastDebugViewBounds;
-	private boolean debugDataReady;
 	private final WorldRenderData worldRenderData = new WorldRenderData(
 		gameManager.getWorldMap().getTerrainMap(),
 		gameManager.getRoadGraph().getRoads(),
@@ -49,25 +49,50 @@ public class App {
 	);
 
 	public App() {
-		window.setCamera(camera);
-		window.setMouseHandler(gameManager.getMouseHandlerManager().getMouseHandler());
-		window.setHud(gameManager.getHud());
-		window.setRightClickHandler(gameManager::cancelActiveAction);
+		window.setInputController(
+			new GameInputController(
+				camera,
+				gameManager.getMouseHandlerManager().getMouseHandler(),
+				gameManager.getHud(),
+				hudWindowManager,
+				gameManager::cancelActiveAction,
+				window.getMetrics()
+			)
+		);
+		gameManager.setDebugWindowCreationHandler(this::createProfilerWindow);
+	}
+
+	private void createProfilerWindow() {
+		hudWindowManager.open(
+			HudWindowSpec.standard(
+				"DEBUG",
+				24,
+				156,
+				1000,
+				310,
+				new DebugProfilerWindowContent(
+					gameManager.getPerformanceProfiler(),
+					() -> gameManager.getMouseHandlerManager().getMouseHandler().getMousePosition(),
+					gameManager::isDebugModeEnabled,
+					() -> gameManager.getActionHandlers().get("toggle-debug").run()
+				)
+			)
+		);
 	}
 
 	public void run() {
 		window.init();
 		try {
 			GL.createCapabilities();
+			worldDebugOverlay = new WorldDebugOverlay(gameManager.getPerformanceProfiler());
 			if (GL.getCapabilities().OpenGL33) {
 				personMeshRenderer = new PersonMeshRenderer();
-				worldDebugMeshRenderer = new WorldDebugMeshRenderer();
 			} else {
 				System.err.println(
 					"OpenGL 3.3 unavailable; using compatibility renderers for people and debug."
 				);
 			}
-			configure2DView();
+			worldViewport.applyIfChanged(window.getMetrics());
 			loop.start(
 				window::shouldClose,
 				window::update,
@@ -76,27 +101,14 @@ public class App {
 				gameManager::setFramesPerSecond
 			);
 		} finally {
-			if (worldDebugMeshRenderer != null) {
-				worldDebugMeshRenderer.close();
+			if (worldDebugOverlay != null) {
+				worldDebugOverlay.close();
 			}
 			if (personMeshRenderer != null) {
 				personMeshRenderer.close();
 			}
 			window.destroy();
 		}
-	}
-
-	/**
-	 * Configures the OpenGL context for 2D rendering, setting up an orthographic
-	 * projection that matches the window dimensions.
-	 */
-	private void configure2DView() {
-		glViewport(0, 0, window.getWidth(), window.getHeight());
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(0, window.getWidth(), window.getHeight(), 0, -1, 1);
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
 	}
 
 	/**
@@ -125,46 +137,22 @@ public class App {
 	 * vehicles, and any drag lines created by the mouse handler.
 	 */
 	private void render() {
+		WindowMetrics metrics = window.getMetrics();
+		if (!metrics.hasArea()) {
+			return;
+		}
+		worldViewport.applyIfChanged(metrics);
 		glClearColor(0.035f, 0.16f, 0.23f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		glPushMatrix();
-		camera.apply(window.getWidth(), window.getHeight());
+		camera.apply(metrics.width(), metrics.height());
 		WorldViewBounds viewBounds = camera.getVisibleWorldBounds(
-			window.getWidth(),
-			window.getHeight()
+			metrics.width(),
+			metrics.height()
 		);
 		boolean debugModeEnabled = gameManager.isDebugModeEnabled();
-		if (!debugModeEnabled) {
-			debugDataReady = false;
-			lastDebugRefreshTick = -1;
-			lastDebugViewBounds = null;
-		} else if (worldDebugMeshRenderer != null) {
-			long currentTick = gameManager.getCurrentTickNumber();
-			boolean refreshByTick =
-				!debugDataReady || currentTick - lastDebugRefreshTick >= DEBUG_REFRESH_TICKS;
-			boolean refreshByView =
-				!viewBounds.equals(lastDebugViewBounds) &&
-				currentTick - lastDebugRefreshTick >= DEBUG_VIEW_REFRESH_TICKS;
-			if (refreshByTick || refreshByView) {
-				long debugPrepareStartedAtNanos = System.nanoTime();
-				worldDebugMeshRenderer.updateDestinations(
-					worldRenderData,
-					viewBounds,
-					camera.getZoom()
-				);
-				gameManager
-					.getPerformanceProfiler()
-					.record(
-						PerformanceProfiler.Section.DEBUG_PREPARE,
-						System.nanoTime() - debugPrepareStartedAtNanos
-					);
-				lastDebugRefreshTick = currentTick;
-				lastDebugViewBounds = viewBounds;
-				debugDataReady = true;
-			}
-		}
 
 		long worldRenderStartedAtNanos = System.nanoTime();
 		WorldRenderer.renderWorld(
@@ -185,40 +173,25 @@ public class App {
 			camera.getZoom(),
 			viewBounds
 		);
-		if (gameManager.isDebugModeEnabled()) {
-			long debugRenderStartedAtNanos = System.nanoTime();
-			if (worldDebugMeshRenderer == null) {
-				WorldDebugRenderer.renderDestinations(
-					worldRenderData,
-					camera.getZoom(),
-					viewBounds
-				);
-			} else {
-				worldDebugMeshRenderer.renderDestinations(camera.getZoom());
-			}
-			gameManager
-				.getPerformanceProfiler()
-				.record(
-					PerformanceProfiler.Section.DEBUG_RENDER,
-					System.nanoTime() - debugRenderStartedAtNanos
-				);
-		}
+		worldDebugOverlay.render(
+			debugModeEnabled,
+			worldRenderData,
+			camera.getZoom(),
+			viewBounds,
+			gameManager.getCurrentTickNumber()
+		);
 		glPopMatrix();
 		glLoadIdentity();
 
 		long hudRenderStartedAtNanos = System.nanoTime();
-		HudRenderer.render(
-			gameManager.getHud(),
-			window.getWidth(),
-			window.getHeight(),
-			gameManager.getDebugMousePosition()
+		HudRenderer.render(gameManager.getHud(), metrics.width(), metrics.height(), null);
+		hudWindowRenderer.render(
+			hudWindowManager,
+			metrics.width(),
+			metrics.height(),
+			metrics.framebufferWidth(),
+			metrics.framebufferHeight()
 		);
-		if (debugModeEnabled) {
-			performanceProfilerRenderer.render(
-				gameManager.getPerformanceProfiler(),
-				window.getWidth()
-			);
-		}
 		PerformanceProfiler performanceProfiler = gameManager.getPerformanceProfiler();
 		performanceProfiler.record(
 			PerformanceProfiler.Section.HUD_RENDER,

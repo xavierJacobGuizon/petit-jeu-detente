@@ -50,6 +50,7 @@ public final class GameManager {
 
 	private final HudManager hudManager;
 	private boolean debugModeEnabled;
+	private Runnable debugWindowCreationHandler = () -> {};
 
 	public GameManager() {
 		this(new IslandTerrainGenerator(), new Random());
@@ -141,6 +142,10 @@ public final class GameManager {
 
 	public boolean isDebugModeEnabled() {
 		return debugModeEnabled;
+	}
+
+	public void setDebugWindowCreationHandler(Runnable handler) {
+		debugWindowCreationHandler = Objects.requireNonNull(handler);
 	}
 
 	public Point getDebugMousePosition() {
@@ -361,5 +366,6 @@ public final class GameManager {
 			handler.setPersonCreationEnabled(!handler.isPersonCreationEnabled());
 		});
 		actionHandlers.register("toggle-debug", () -> debugModeEnabled = !debugModeEnabled);
+		actionHandlers.register("create-debug-window", () -> debugWindowCreationHandler.run());
 	}
 }

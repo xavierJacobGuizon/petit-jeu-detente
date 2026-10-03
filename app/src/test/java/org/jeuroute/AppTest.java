@@ -114,8 +114,8 @@ class AppTest {
 		assertEquals(5, menu.children().size());
 		assertEquals("VEHICULE", menu.children().get(0).label());
 		assertEquals("PERSONNE", menu.children().get(3).label());
-		assertEquals("DEBUG", menu.children().get(4).label());
-		assertEquals("toggle-debug", menu.children().get(4).action());
+		assertEquals("DEV", menu.children().get(4).label());
+		assertEquals("create-debug-window", menu.children().get(4).action());
 		assertSame(menu, sameMenu);
 	}
 

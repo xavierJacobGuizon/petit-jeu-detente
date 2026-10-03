@@ -4,27 +4,35 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_RIGHT;
 
 import java.awt.Point;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jeuroute.gamecore.camera.Camera2D;
 import org.junit.jupiter.api.Test;
 
-class GameWindowInputTest {
+class GameInputControllerTest {
+
+	private static final WindowMetrics METRICS = new WindowMetrics(1280, 720, 1280, 720);
 
 	@Test
 	void rightClickCancelsWithoutPanning() {
-		GameWindow window = new GameWindow(1280, 720, "test");
 		Camera2D camera = new Camera2D(640.0, 360.0);
 		AtomicInteger cancellationCount = new AtomicInteger();
-		window.setCamera(camera);
-		window.setRightClickHandler(cancellationCount::incrementAndGet);
-		window.handleCursorPosition(100, 100);
+		GameInputController input = new GameInputController(
+			camera,
+			null,
+			null,
+			null,
+			cancellationCount::incrementAndGet,
+			METRICS
+		);
+		input.handleCursorPosition(100, 100);
 		Point worldCenterBeforeClick = camera.screenToWorld(640, 360, 1280, 720);
 
-		window.handleRightButtonPress();
-		window.handleCursorPosition(103, 103);
-		window.handleRightButtonRelease();
+		input.handleRightButtonPress(1_000_000_000L);
+		input.handleCursorPosition(103, 103);
+		input.handleRightButtonRelease(2_000_000_000L);
 
 		assertEquals(1, cancellationCount.get());
 		assertEquals(worldCenterBeforeClick, camera.screenToWorld(640, 360, 1280, 720));
@@ -32,18 +40,23 @@ class GameWindowInputTest {
 
 	@Test
 	void rightDragPansWithoutCancelling() {
-		GameWindow window = new GameWindow(1280, 720, "test");
 		Camera2D camera = new Camera2D(640.0, 360.0);
 		AtomicInteger cancellationCount = new AtomicInteger();
-		window.setCamera(camera);
-		window.setRightClickHandler(cancellationCount::incrementAndGet);
-		window.handleCursorPosition(100, 100);
+		GameInputController input = new GameInputController(
+			camera,
+			null,
+			null,
+			null,
+			cancellationCount::incrementAndGet,
+			METRICS
+		);
+		input.handleCursorPosition(100, 100);
 		Point worldCenterBeforeDrag = camera.screenToWorld(640, 360, 1280, 720);
 
-		window.handleRightButtonPress(1_000_000_000L);
-		window.handleCursorPosition(106, 100);
-		window.handleCursorPosition(116, 100);
-		window.handleRightButtonRelease(4_000_000_000L);
+		input.handleRightButtonPress(1_000_000_000L);
+		input.handleCursorPosition(106, 100);
+		input.handleCursorPosition(116, 100);
+		input.handleRightButtonRelease(4_000_000_000L);
 
 		assertEquals(0, cancellationCount.get());
 		assertTrue(camera.screenToWorld(640, 360, 1280, 720).x < worldCenterBeforeDrag.x);
@@ -51,24 +64,36 @@ class GameWindowInputTest {
 
 	@Test
 	void rightPressLongerThanTwoSecondsDoesNotCancel() {
-		GameWindow window = new GameWindow(1280, 720, "test");
 		AtomicInteger cancellationCount = new AtomicInteger();
-		window.setRightClickHandler(cancellationCount::incrementAndGet);
-		window.handleRightButtonPress(1_000_000_000L);
-		window.handleRightButtonRelease(3_000_000_001L);
+		GameInputController input = controller(cancellationCount);
+
+		input.handleRightButtonPress(1_000_000_000L);
+		input.handleRightButtonRelease(3_000_000_001L);
 
 		assertEquals(0, cancellationCount.get());
 	}
 
 	@Test
 	void rightPressOfExactlyTwoSecondsStillCountsAsClick() {
-		GameWindow window = new GameWindow(1280, 720, "test");
 		AtomicInteger cancellationCount = new AtomicInteger();
-		window.setRightClickHandler(cancellationCount::incrementAndGet);
-		window.handleRightButtonPress(1_000_000_000L);
-		window.handleRightButtonRelease(3_000_000_000L);
+		GameInputController input = controller(cancellationCount);
+
+		input.handleRightButtonPress(1_000_000_000L);
+		input.handleRightButtonRelease(3_000_000_000L);
 
 		assertEquals(1, cancellationCount.get());
+	}
+
+	@Test
+	void rightMouseButtonIsConsumedByTheController() {
+		GameInputController input = controller(new AtomicInteger());
+
+		assertTrue(
+			input.handleMouseButton(GLFW_MOUSE_BUTTON_RIGHT, org.lwjgl.glfw.GLFW.GLFW_PRESS)
+		);
+		assertTrue(
+			input.handleMouseButton(GLFW_MOUSE_BUTTON_RIGHT, org.lwjgl.glfw.GLFW.GLFW_RELEASE)
+		);
 	}
 
 	@Test
@@ -82,5 +107,16 @@ class GameWindowInputTest {
 		assertFalse(mouseHandler.isStationCreationEnabled());
 		assertNull(mouseHandler.consumeStationPlacement());
 		assertNull(mouseHandler.getPlacementPreviewType());
+	}
+
+	private static GameInputController controller(AtomicInteger cancellationCount) {
+		return new GameInputController(
+			new Camera2D(640.0, 360.0),
+			null,
+			null,
+			null,
+			cancellationCount::incrementAndGet,
+			METRICS
+		);
 	}
 }

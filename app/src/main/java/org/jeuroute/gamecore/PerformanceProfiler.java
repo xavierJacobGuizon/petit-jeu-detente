@@ -1,14 +1,12 @@
 package org.jeuroute.gamecore;
 
 import java.util.Arrays;
-import java.util.Locale;
 
 public final class PerformanceProfiler {
 
 	private static final int SAMPLE_CAPACITY = 512;
 	private static final long WINDOW_NANOS = 5_000_000_000L;
 	private static final long SNAPSHOT_INTERVAL_NANOS = 1_000_000_000L;
-	private static final String HEADER = formatHeader();
 
 	public enum Section {
 		FRAME("FRAME"),
@@ -18,14 +16,18 @@ public final class PerformanceProfiler {
 		ROUTE_PLANNING("ROUTE"),
 		WORLD_RENDER("WORLD"),
 		PERSON_RENDER("PERSON DRAW"),
-		DEBUG_PREPARE("DEBUG PREP"),
-		DEBUG_RENDER("DEBUG DRAW"),
+		DEBUG_PREPARE("DBG PREP"),
+		DEBUG_RENDER("DBG DRAW"),
 		HUD_RENDER("HUD");
 
 		private final String label;
 
 		Section(String label) {
 			this.label = label;
+		}
+
+		public String displayLabel() {
+			return label;
 		}
 	}
 
@@ -36,16 +38,13 @@ public final class PerformanceProfiler {
 	private final int[] cursors = new int[Section.values().length];
 	private final int[] counts = new int[Section.values().length];
 	private final Statistics[] statistics = new Statistics[Section.values().length];
-	private final String[] displayLines = new String[Section.values().length + 1];
 	private final long[] sortBuffer = new long[SAMPLE_CAPACITY];
 	private long lastSnapshotNanos = Long.MIN_VALUE;
 	private long snapshotVersion;
 
 	public PerformanceProfiler() {
-		displayLines[0] = HEADER;
 		for (Section section : Section.values()) {
 			statistics[section.ordinal()] = new Statistics(0, 0.0, 0L, 0L);
-			displayLines[section.ordinal() + 1] = section.label + "  --";
 		}
 	}
 
@@ -64,9 +63,7 @@ public final class PerformanceProfiler {
 		for (Section section : Section.values()) {
 			int sectionIndex = section.ordinal();
 			pruneExpiredSamples(sectionIndex, nowNanos);
-			Statistics sectionStatistics = calculateStatistics(sectionIndex);
-			statistics[sectionIndex] = sectionStatistics;
-			displayLines[sectionIndex + 1] = formatLine(section, sectionStatistics);
+			statistics[sectionIndex] = calculateStatistics(sectionIndex);
 		}
 		lastSnapshotNanos = nowNanos;
 		snapshotVersion++;
@@ -75,10 +72,6 @@ public final class PerformanceProfiler {
 
 	public Statistics statistics(Section section) {
 		return statistics[section.ordinal()];
-	}
-
-	public String[] displayLines() {
-		return displayLines;
 	}
 
 	public long snapshotVersion() {
@@ -122,30 +115,5 @@ public final class PerformanceProfiler {
 		Arrays.sort(sortBuffer, 0, count);
 		int percentileIndex = (int) Math.ceil(count * 0.95) - 1;
 		return new Statistics(count, totalNanos / count, sortBuffer[percentileIndex], maximumNanos);
-	}
-
-	private static String formatLine(Section section, Statistics sectionStatistics) {
-		if (sectionStatistics.sampleCount() == 0) {
-			return String.format(Locale.ROOT, "%-12s %8s %8s %8s", section.label, "--", "--", "--");
-		}
-		return String.format(
-			Locale.ROOT,
-			"%-12s %8.1f %8.1f %8.1f",
-			section.label,
-			sectionStatistics.averageNanos() / 1_000_000.0,
-			sectionStatistics.p95Nanos() / 1_000_000.0,
-			sectionStatistics.maxNanos() / 1_000_000.0
-		);
-	}
-
-	private static String formatHeader() {
-		return String.format(
-			Locale.ROOT,
-			"%-12s %8s %8s %8s",
-			"SECTION",
-			"AVG MS",
-			"P95 MS",
-			"MAX MS"
-		);
 	}
 }
