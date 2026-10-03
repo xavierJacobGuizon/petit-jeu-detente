@@ -34,10 +34,20 @@ public final class WorldRenderer {
 		WorldViewBounds viewBounds,
 		PersonMeshRenderer personMeshRenderer
 	) {
+		renderWorld(world, zoom, viewBounds, personMeshRenderer, null);
+	}
+
+	public static void renderWorld(
+		WorldRenderData world,
+		double zoom,
+		WorldViewBounds viewBounds,
+		PersonMeshRenderer personMeshRenderer,
+		PerformanceProfiler performanceProfiler
+	) {
 		WorldTerrainRenderer.render(world.terrain(), zoom, viewBounds);
 		renderEnvironment(world, zoom, viewBounds);
 		renderTransitNetwork(world, zoom, viewBounds);
-		renderTransport(world, zoom, viewBounds, personMeshRenderer);
+		renderTransport(world, zoom, viewBounds, personMeshRenderer, performanceProfiler);
 	}
 
 	private static void renderEnvironment(
@@ -64,11 +74,12 @@ public final class WorldRenderer {
 		WorldRenderData world,
 		double zoom,
 		WorldViewBounds viewBounds,
-		PersonMeshRenderer personMeshRenderer
+		PersonMeshRenderer personMeshRenderer,
+		PerformanceProfiler performanceProfiler
 	) {
 		renderDepots(world.depots(), zoom, viewBounds);
 		renderVehicles(world.vehicles(), viewBounds);
-		renderPeople(world.people(), zoom, viewBounds, personMeshRenderer);
+		renderPeople(world.people(), zoom, viewBounds, personMeshRenderer, performanceProfiler);
 	}
 
 	private static void renderRoads(List<Road> roads, double zoom, WorldViewBounds viewBounds) {
@@ -134,12 +145,23 @@ public final class WorldRenderer {
 		List<Person> people,
 		double zoom,
 		WorldViewBounds viewBounds,
-		PersonMeshRenderer personMeshRenderer
+		PersonMeshRenderer personMeshRenderer,
+		PerformanceProfiler performanceProfiler
 	) {
-		if (personMeshRenderer != null) {
-			personMeshRenderer.render(people, zoom, viewBounds);
-		} else {
-			PersonRenderer.render(people, zoom, viewBounds);
+		long startedAtNanos = System.nanoTime();
+		try {
+			if (personMeshRenderer != null) {
+				personMeshRenderer.render(people, zoom, viewBounds);
+			} else {
+				PersonRenderer.render(people, zoom, viewBounds);
+			}
+		} finally {
+			if (performanceProfiler != null) {
+				performanceProfiler.record(
+					PerformanceProfiler.Section.PERSON_RENDER,
+					System.nanoTime() - startedAtNanos
+				);
+			}
 		}
 	}
 

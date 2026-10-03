@@ -8,6 +8,7 @@ import java.util.Random;
 import org.jeuroute.configuration.actions.ActionHandlerRegistry;
 import org.jeuroute.configuration.indicators.IndicatorRegistry;
 import org.jeuroute.gamecore.MouseHandler;
+import org.jeuroute.gamecore.PerformanceProfiler;
 import org.jeuroute.gamecore.hud.Hud;
 import org.jeuroute.gamecore.hud.elements.HudButton;
 import org.jeuroute.gamecore.time.SimulationClock;
@@ -36,6 +37,7 @@ public final class GameManager {
 	private final VehicleManager vehicleManager;
 	private final PersonManager personManager;
 	private final LineManager lineManager;
+	private final PerformanceProfiler performanceProfiler = new PerformanceProfiler();
 
 	private final ActionHandlerRegistry actionHandlers = new ActionHandlerRegistry();
 	private final IndicatorRegistry indicatorRegistry = new IndicatorRegistry();
@@ -67,7 +69,8 @@ public final class GameManager {
 		personManager = new PersonManager(
 			worldMap.getTerrainMap(),
 			worldMap.getHouseManager().getHouses(),
-			random
+			random,
+			performanceProfiler
 		);
 		lineManager = new LineManager(worldMap.getRoadGraph());
 		mouseHandlerManager = new MouseHandlerManager(
@@ -130,6 +133,10 @@ public final class GameManager {
 
 	public PersonManager getPersonManager() {
 		return personManager;
+	}
+
+	public PerformanceProfiler getPerformanceProfiler() {
+		return performanceProfiler;
 	}
 
 	public boolean isDebugModeEnabled() {
@@ -203,11 +210,19 @@ public final class GameManager {
 	}
 
 	private void updateSimulation(SimulationTick tick) {
-		for (Vehicle vehicle : vehicleManager.getVehicles()) {
-			vehicle.update(tick);
+		long startedAtNanos = System.nanoTime();
+		try {
+			for (Vehicle vehicle : vehicleManager.getVehicles()) {
+				vehicle.update(tick);
+			}
+			personManager.update(tick);
+			worldMap.update(tick);
+		} finally {
+			performanceProfiler.record(
+				PerformanceProfiler.Section.SIMULATION,
+				System.nanoTime() - startedAtNanos
+			);
 		}
-		personManager.update(tick);
-		worldMap.update(tick);
 	}
 
 	public void cancelActiveAction() {

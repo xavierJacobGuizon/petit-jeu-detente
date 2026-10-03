@@ -4,6 +4,7 @@ import static org.lwjgl.opengl.GL11.*;
 
 import org.jeuroute.gamecore.GameLoop;
 import org.jeuroute.gamecore.GameWindow;
+import org.jeuroute.gamecore.PerformanceProfiler;
 import org.jeuroute.gamecore.PersonMeshRenderer;
 import org.jeuroute.gamecore.WorldDebugMeshRenderer;
 import org.jeuroute.gamecore.WorldDebugRenderer;
@@ -12,6 +13,7 @@ import org.jeuroute.gamecore.WorldRenderer;
 import org.jeuroute.gamecore.camera.Camera2D;
 import org.jeuroute.gamecore.camera.WorldViewBounds;
 import org.jeuroute.gamecore.hud.presentation.HudRenderer;
+import org.jeuroute.gamecore.hud.presentation.PerformanceProfilerRenderer;
 import org.jeuroute.manager.GameManager;
 import org.jeuroute.model.records.world.WorldRenderData;
 import org.lwjgl.opengl.GL;
@@ -25,6 +27,9 @@ public class App {
 	private final Camera2D camera = new Camera2D(640.0, 360.0);
 	private final GameLoop loop = new GameLoop();
 	private final GameManager gameManager = new GameManager();
+	private final PerformanceProfilerRenderer performanceProfilerRenderer =
+		new PerformanceProfilerRenderer();
+	private long frameStartedAtNanos;
 	private PersonMeshRenderer personMeshRenderer;
 	private WorldDebugMeshRenderer worldDebugMeshRenderer;
 	private long lastDebugRefreshTick = -1;
@@ -101,7 +106,18 @@ public class App {
 	 * @param deltaSeconds
 	 */
 	private void update(double deltaSeconds) {
-		gameManager.update(deltaSeconds);
+		frameStartedAtNanos = System.nanoTime();
+		long updateStartedAtNanos = frameStartedAtNanos;
+		try {
+			gameManager.update(deltaSeconds);
+		} finally {
+			gameManager
+				.getPerformanceProfiler()
+				.record(
+					PerformanceProfiler.Section.UPDATE,
+					System.nanoTime() - updateStartedAtNanos
+				);
+		}
 	}
 
 	/**
@@ -132,29 +148,45 @@ public class App {
 				!viewBounds.equals(lastDebugViewBounds) &&
 				currentTick - lastDebugRefreshTick >= DEBUG_VIEW_REFRESH_TICKS;
 			if (refreshByTick || refreshByView) {
+				long debugPrepareStartedAtNanos = System.nanoTime();
 				worldDebugMeshRenderer.updateDestinations(
 					worldRenderData,
 					viewBounds,
 					camera.getZoom()
 				);
+				gameManager
+					.getPerformanceProfiler()
+					.record(
+						PerformanceProfiler.Section.DEBUG_PREPARE,
+						System.nanoTime() - debugPrepareStartedAtNanos
+					);
 				lastDebugRefreshTick = currentTick;
 				lastDebugViewBounds = viewBounds;
 				debugDataReady = true;
 			}
 		}
 
+		long worldRenderStartedAtNanos = System.nanoTime();
 		WorldRenderer.renderWorld(
 			worldRenderData,
 			camera.getZoom(),
 			viewBounds,
-			personMeshRenderer
+			personMeshRenderer,
+			gameManager.getPerformanceProfiler()
 		);
+		gameManager
+			.getPerformanceProfiler()
+			.record(
+				PerformanceProfiler.Section.WORLD_RENDER,
+				System.nanoTime() - worldRenderStartedAtNanos
+			);
 		WorldPreviewRenderer.renderWorldPreviews(
 			gameManager.getWorldPreviewData(),
 			camera.getZoom(),
 			viewBounds
 		);
 		if (gameManager.isDebugModeEnabled()) {
+			long debugRenderStartedAtNanos = System.nanoTime();
 			if (worldDebugMeshRenderer == null) {
 				WorldDebugRenderer.renderDestinations(
 					worldRenderData,
@@ -164,18 +196,39 @@ public class App {
 			} else {
 				worldDebugMeshRenderer.renderDestinations(camera.getZoom());
 			}
+			gameManager
+				.getPerformanceProfiler()
+				.record(
+					PerformanceProfiler.Section.DEBUG_RENDER,
+					System.nanoTime() - debugRenderStartedAtNanos
+				);
 		}
 		glPopMatrix();
 		glLoadIdentity();
 
+		long hudRenderStartedAtNanos = System.nanoTime();
 		HudRenderer.render(
 			gameManager.getHud(),
 			window.getWidth(),
 			window.getHeight(),
 			gameManager.getDebugMousePosition()
 		);
-
+		if (debugModeEnabled) {
+			performanceProfilerRenderer.render(
+				gameManager.getPerformanceProfiler(),
+				window.getWidth()
+			);
+		}
+		PerformanceProfiler performanceProfiler = gameManager.getPerformanceProfiler();
+		performanceProfiler.record(
+			PerformanceProfiler.Section.HUD_RENDER,
+			System.nanoTime() - hudRenderStartedAtNanos
+		);
 		window.render();
+		performanceProfiler.record(
+			PerformanceProfiler.Section.FRAME,
+			System.nanoTime() - frameStartedAtNanos
+		);
 	}
 
 	public static void main(String[] args) {
