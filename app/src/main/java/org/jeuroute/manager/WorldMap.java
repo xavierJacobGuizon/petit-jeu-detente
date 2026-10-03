@@ -96,6 +96,7 @@ public final class WorldMap {
 			fixedEntityManager.getDepots(),
 			resourceBuildingManager.getBuildings()
 		);
+
 		synchronizeGraphEntities();
 		defaultLayoutInitialized = true;
 		return depot;

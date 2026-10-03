@@ -27,7 +27,7 @@ public final class House {
 		return position.y;
 	}
 
-	public void display(double zoom) {
-		skin.display(position, zoom);
+	public void display() {
+		skin.display(position);
 	}
 }

@@ -136,6 +136,10 @@ public final class GameManager {
 		return debugModeEnabled;
 	}
 
+	public Point getDebugMousePosition() {
+		return debugModeEnabled ? mouseHandlerManager.getMouseHandler().getMousePosition() : null;
+	}
+
 	public LineManager getLineManager() {
 		return lineManager;
 	}
@@ -184,9 +188,11 @@ public final class GameManager {
 		return simulationClock.currentTickNumber();
 	}
 
-	public void update(double deltaSeconds) {
-		fps = deltaSeconds > 0.0 ? (int) Math.round(1.0 / deltaSeconds) : 0;
+	public void setFramesPerSecond(int framesPerSecond) {
+		fps = Math.max(0, framesPerSecond);
+	}
 
+	public void update(double deltaSeconds) {
 		mouseHandlerManager.processPendingInput();
 		Point depotPosition = mouseHandlerManager.getMouseHandler().consumeDepotPlacement();
 		if (depotPosition != null) {
@@ -233,6 +239,11 @@ public final class GameManager {
 
 	private void initializeWorld() {
 		Depot depot = worldMap.initializeDefaultLayout();
+
+		for (int i = 0; i < 10; i++) {
+			personManager.addPerson(new Point(500, 500));
+		}
+
 		vehicleManager.addDepotAccessPosition(depot.getAccessPosition());
 
 		Point depotPosition = depot.getPosition();

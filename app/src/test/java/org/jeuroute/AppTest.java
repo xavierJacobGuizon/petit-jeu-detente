@@ -245,7 +245,7 @@ class AppTest {
 		RoadGraph hudGraph = game.getRoadGraph();
 		HudManager hudManager = game.getHudManager();
 		hudGraph.createRoad(new Point(0, 75), new Point(200, 75));
-		game.update(1.0 / 60.0);
+		game.setFramesPerSecond(60);
 
 		HudIndicatorSlot customSlot = hudManager.createIndicatorSlot(HudAnchor.BOTTOM_LEFT);
 		customSlot.add(new HudIndicator("TEST", () -> "OK", 0.4f, 0.8f, 0.6f));

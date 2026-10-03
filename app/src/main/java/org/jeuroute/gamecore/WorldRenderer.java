@@ -21,14 +21,23 @@ public final class WorldRenderer {
 	private WorldRenderer() {}
 
 	public static void renderWorld(WorldRenderData world, double zoom) {
-		renderWorld(world, zoom, WorldViewBounds.UNBOUNDED);
+		renderWorld(world, zoom, WorldViewBounds.UNBOUNDED, null);
 	}
 
 	public static void renderWorld(WorldRenderData world, double zoom, WorldViewBounds viewBounds) {
+		renderWorld(world, zoom, viewBounds, null);
+	}
+
+	public static void renderWorld(
+		WorldRenderData world,
+		double zoom,
+		WorldViewBounds viewBounds,
+		PersonMeshRenderer personMeshRenderer
+	) {
 		WorldTerrainRenderer.render(world.terrain(), zoom, viewBounds);
 		renderEnvironment(world, zoom, viewBounds);
 		renderTransitNetwork(world, zoom, viewBounds);
-		renderTransport(world, zoom, viewBounds);
+		renderTransport(world, zoom, viewBounds, personMeshRenderer);
 	}
 
 	private static void renderEnvironment(
@@ -38,7 +47,7 @@ public final class WorldRenderer {
 	) {
 		renderRoads(world.roads(), zoom, viewBounds);
 		renderResourceBuildings(world.resourceBuildings(), zoom, viewBounds);
-		renderHouses(world.houses(), zoom, viewBounds);
+		renderHouses(world.houses(), viewBounds);
 	}
 
 	private static void renderTransitNetwork(
@@ -54,11 +63,12 @@ public final class WorldRenderer {
 	private static void renderTransport(
 		WorldRenderData world,
 		double zoom,
-		WorldViewBounds viewBounds
+		WorldViewBounds viewBounds,
+		PersonMeshRenderer personMeshRenderer
 	) {
 		renderDepots(world.depots(), zoom, viewBounds);
 		renderVehicles(world.vehicles(), viewBounds);
-		renderPeople(world.people(), zoom, viewBounds);
+		renderPeople(world.people(), zoom, viewBounds, personMeshRenderer);
 	}
 
 	private static void renderRoads(List<Road> roads, double zoom, WorldViewBounds viewBounds) {
@@ -105,19 +115,32 @@ public final class WorldRenderer {
 		}
 	}
 
-	private static void renderHouses(List<House> houses, double zoom, WorldViewBounds viewBounds) {
+	private static void renderHouses(List<House> houses, WorldViewBounds viewBounds) {
 		for (House house : houses) {
 			if (
 				house != null &&
-				viewBounds.contains(house.getPositionX(), house.getPositionY(), House.HALF_SIZE)
+				viewBounds.contains(
+					house.getPositionX(),
+					house.getPositionY(),
+					House.HALF_SIZE + 10.0
+				)
 			) {
-				house.display(zoom);
+				house.display();
 			}
 		}
 	}
 
-	private static void renderPeople(List<Person> people, double zoom, WorldViewBounds viewBounds) {
-		PersonRenderer.render(people, zoom, viewBounds);
+	private static void renderPeople(
+		List<Person> people,
+		double zoom,
+		WorldViewBounds viewBounds,
+		PersonMeshRenderer personMeshRenderer
+	) {
+		if (personMeshRenderer != null) {
+			personMeshRenderer.render(people, zoom, viewBounds);
+		} else {
+			PersonRenderer.render(people, zoom, viewBounds);
+		}
 	}
 
 	private static void renderStations(

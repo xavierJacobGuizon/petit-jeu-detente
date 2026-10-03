@@ -4,6 +4,8 @@ import static org.lwjgl.opengl.GL11.*;
 
 import org.jeuroute.gamecore.GameLoop;
 import org.jeuroute.gamecore.GameWindow;
+import org.jeuroute.gamecore.PersonMeshRenderer;
+import org.jeuroute.gamecore.WorldDebugMeshRenderer;
 import org.jeuroute.gamecore.WorldDebugRenderer;
 import org.jeuroute.gamecore.WorldPreviewRenderer;
 import org.jeuroute.gamecore.WorldRenderer;
@@ -16,10 +18,18 @@ import org.lwjgl.opengl.GL;
 
 public class App {
 
+	private static final long DEBUG_REFRESH_TICKS = 60;
+	private static final long DEBUG_VIEW_REFRESH_TICKS = 30;
+
 	private final GameWindow window = new GameWindow(1280, 720, "Route Runner");
 	private final Camera2D camera = new Camera2D(640.0, 360.0);
 	private final GameLoop loop = new GameLoop();
 	private final GameManager gameManager = new GameManager();
+	private PersonMeshRenderer personMeshRenderer;
+	private WorldDebugMeshRenderer worldDebugMeshRenderer;
+	private long lastDebugRefreshTick = -1;
+	private WorldViewBounds lastDebugViewBounds;
+	private boolean debugDataReady;
 	private final WorldRenderData worldRenderData = new WorldRenderData(
 		gameManager.getWorldMap().getTerrainMap(),
 		gameManager.getRoadGraph().getRoads(),
@@ -44,9 +54,29 @@ public class App {
 		window.init();
 		try {
 			GL.createCapabilities();
+			if (GL.getCapabilities().OpenGL33) {
+				personMeshRenderer = new PersonMeshRenderer();
+				worldDebugMeshRenderer = new WorldDebugMeshRenderer();
+			} else {
+				System.err.println(
+					"OpenGL 3.3 unavailable; using compatibility renderers for people and debug."
+				);
+			}
 			configure2DView();
-			loop.start(window::shouldClose, window::update, this::update, this::render);
+			loop.start(
+				window::shouldClose,
+				window::update,
+				this::update,
+				this::render,
+				gameManager::setFramesPerSecond
+			);
 		} finally {
+			if (worldDebugMeshRenderer != null) {
+				worldDebugMeshRenderer.close();
+			}
+			if (personMeshRenderer != null) {
+				personMeshRenderer.close();
+			}
 			window.destroy();
 		}
 	}
@@ -89,20 +119,61 @@ public class App {
 			window.getWidth(),
 			window.getHeight()
 		);
+		boolean debugModeEnabled = gameManager.isDebugModeEnabled();
+		if (!debugModeEnabled) {
+			debugDataReady = false;
+			lastDebugRefreshTick = -1;
+			lastDebugViewBounds = null;
+		} else if (worldDebugMeshRenderer != null) {
+			long currentTick = gameManager.getCurrentTickNumber();
+			boolean refreshByTick =
+				!debugDataReady || currentTick - lastDebugRefreshTick >= DEBUG_REFRESH_TICKS;
+			boolean refreshByView =
+				!viewBounds.equals(lastDebugViewBounds) &&
+				currentTick - lastDebugRefreshTick >= DEBUG_VIEW_REFRESH_TICKS;
+			if (refreshByTick || refreshByView) {
+				worldDebugMeshRenderer.updateDestinations(
+					worldRenderData,
+					viewBounds,
+					camera.getZoom()
+				);
+				lastDebugRefreshTick = currentTick;
+				lastDebugViewBounds = viewBounds;
+				debugDataReady = true;
+			}
+		}
 
-		WorldRenderer.renderWorld(worldRenderData, camera.getZoom(), viewBounds);
+		WorldRenderer.renderWorld(
+			worldRenderData,
+			camera.getZoom(),
+			viewBounds,
+			personMeshRenderer
+		);
 		WorldPreviewRenderer.renderWorldPreviews(
 			gameManager.getWorldPreviewData(),
 			camera.getZoom(),
 			viewBounds
 		);
 		if (gameManager.isDebugModeEnabled()) {
-			WorldDebugRenderer.renderDestinations(worldRenderData, camera.getZoom(), viewBounds);
+			if (worldDebugMeshRenderer == null) {
+				WorldDebugRenderer.renderDestinations(
+					worldRenderData,
+					camera.getZoom(),
+					viewBounds
+				);
+			} else {
+				worldDebugMeshRenderer.renderDestinations(camera.getZoom());
+			}
 		}
 		glPopMatrix();
 		glLoadIdentity();
 
-		HudRenderer.render(gameManager.getHud(), window.getWidth(), window.getHeight());
+		HudRenderer.render(
+			gameManager.getHud(),
+			window.getWidth(),
+			window.getHeight(),
+			gameManager.getDebugMousePosition()
+		);
 
 		window.render();
 	}

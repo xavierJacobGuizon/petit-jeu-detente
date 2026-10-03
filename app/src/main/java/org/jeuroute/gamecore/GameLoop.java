@@ -1,25 +1,48 @@
 package org.jeuroute.gamecore;
 
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleConsumer;
+import java.util.function.IntConsumer;
 
 public class GameLoop {
-    public void start(BooleanSupplier shouldClose, Runnable pollEvents, DoubleConsumer update, Runnable render) {
-        long previousFrameNs = System.nanoTime();
 
-        while (!shouldClose.getAsBoolean()) {
-            pollEvents.run();
+	public void start(
+		BooleanSupplier shouldClose,
+		Runnable pollEvents,
+		DoubleConsumer update,
+		Runnable render
+	) {
+		start(shouldClose, pollEvents, update, render, ignored -> {});
+	}
 
-            if (shouldClose.getAsBoolean()) {
-                break;
-            }
+	public void start(
+		BooleanSupplier shouldClose,
+		Runnable pollEvents,
+		DoubleConsumer update,
+		Runnable render,
+		IntConsumer framesPerSecondUpdated
+	) {
+		Objects.requireNonNull(framesPerSecondUpdated);
+		FrameRateCounter frameRateCounter = new FrameRateCounter();
+		long previousFrameNs = System.nanoTime();
 
-            long nowNs = System.nanoTime();
-            double deltaSeconds = (nowNs - previousFrameNs) / 1_000_000_000.0;
-            previousFrameNs = nowNs;
+		while (!shouldClose.getAsBoolean()) {
+			pollEvents.run();
 
-            update.accept(deltaSeconds);
-            render.run();
-        }
-    }
+			if (shouldClose.getAsBoolean()) {
+				break;
+			}
+
+			long nowNs = System.nanoTime();
+			double deltaSeconds = (nowNs - previousFrameNs) / 1_000_000_000.0;
+			previousFrameNs = nowNs;
+
+			update.accept(deltaSeconds);
+			render.run();
+			frameRateCounter
+				.recordCompletedFrame(System.nanoTime())
+				.ifPresent(framesPerSecondUpdated);
+		}
+	}
 }

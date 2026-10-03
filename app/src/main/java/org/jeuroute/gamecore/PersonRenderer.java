@@ -61,8 +61,8 @@ public final class PersonRenderer {
 				continue;
 			}
 			double centerX = person.getPreciseX();
-			double centerY = person.getPreciseY() - 5.0 * zoom;
-			double radius = Math.max(2.0, 4.0 * zoom);
+			double centerY = person.getPreciseY() - 5.0;
+			double radius = 4.0;
 			for (int segment = 0; segment < HEAD_SEGMENTS; segment++) {
 				glVertex2d(centerX, centerY);
 				glVertex2d(
@@ -87,10 +87,10 @@ public final class PersonRenderer {
 			}
 			double x = person.getPreciseX();
 			double y = person.getPreciseY();
-			glVertex2d(x - 3.0 * zoom, y - 1.0 * zoom);
-			glVertex2d(x + 3.0 * zoom, y - 1.0 * zoom);
-			glVertex2d(x + 4.0 * zoom, y + 6.0 * zoom);
-			glVertex2d(x - 4.0 * zoom, y + 6.0 * zoom);
+			glVertex2d(x - 3.0, y - 1.0);
+			glVertex2d(x + 3.0, y - 1.0);
+			glVertex2d(x + 4.0, y + 6.0);
+			glVertex2d(x - 4.0, y + 6.0);
 		}
 		glEnd();
 	}
@@ -104,17 +104,17 @@ public final class PersonRenderer {
 			}
 			double x = person.getPreciseX();
 			double y = person.getPreciseY();
-			glVertex2d(x - 2.0 * zoom, y + 5.0 * zoom);
-			glVertex2d(x, y + 5.0 * zoom);
-			glVertex2d(x - 2.0 * zoom, y + 10.0 * zoom);
-			glVertex2d(x, y + 5.0 * zoom);
-			glVertex2d(x + 2.0 * zoom, y + 5.0 * zoom);
-			glVertex2d(x + 2.0 * zoom, y + 10.0 * zoom);
+			glVertex2d(x - 2.0, y + 5.0);
+			glVertex2d(x, y + 5.0);
+			glVertex2d(x - 2.0, y + 10.0);
+			glVertex2d(x, y + 5.0);
+			glVertex2d(x + 2.0, y + 5.0);
+			glVertex2d(x + 2.0, y + 10.0);
 		}
 		glEnd();
 	}
 
 	private static boolean isVisible(Person person, double zoom, WorldViewBounds viewBounds) {
-		return viewBounds.contains(person.getPreciseX(), person.getPreciseY(), 10.0 * zoom);
+		return viewBounds.contains(person.getPreciseX(), person.getPreciseY(), 10.0);
 	}
 }

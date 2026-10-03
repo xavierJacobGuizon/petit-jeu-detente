@@ -12,10 +12,10 @@ import org.jeuroute.model.world.settlement.House;
 
 public final class HouseSkin {
 
-	public void display(Point position, double zoom) {
-		int halfWidth = (int) Math.round(House.HALF_SIZE * zoom);
-		int halfWallHeight = (int) Math.round(8.0 * zoom);
-		int roofHeight = (int) Math.round(10.0 * zoom);
+	public void display(Point position) {
+		int halfWidth = House.HALF_SIZE;
+		int halfWallHeight = 8;
+		int roofHeight = 10;
 		int x = position.x;
 		int y = position.y;
 

@@ -3,6 +3,7 @@ package org.jeuroute.gamecore.hud.presentation;
 import static org.lwjgl.opengl.GL11.*;
 
 import java.awt.Color;
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
 import org.jeuroute.gamecore.hud.Hud;
@@ -35,6 +36,15 @@ public final class HudRenderer {
 	 * @param windowHeight Hauteur de la fenêtre
 	 */
 	public static void render(Hud hud, int windowWidth, int windowHeight) {
+		render(hud, windowWidth, windowHeight, null);
+	}
+
+	public static void render(
+		Hud hud,
+		int windowWidth,
+		int windowHeight,
+		Point debugMousePosition
+	) {
 		List<HudDrawButton> buttons = collectButtons(hud, windowWidth, windowHeight);
 		List<HudSlotPlacement> slots = HudLayout.layoutIndicatorSlots(
 			hud.getIndicatorSlots(),
@@ -44,9 +54,33 @@ public final class HudRenderer {
 		renderIndicatorSlots(slots);
 		renderButtons(buttons);
 		renderText(slots, buttons);
+		if (debugMousePosition != null) {
+			renderDebugMousePosition(debugMousePosition);
+		}
 		if (hud.getDialog() != null) {
 			renderDialog(hud.getDialog(), windowWidth, windowHeight);
 		}
+	}
+
+	private static void renderDebugMousePosition(Point position) {
+		int x = HudLayout.MARGIN;
+		int y = HudLayout.MARGIN + HudLayout.SLOT_HEIGHT + HudLayout.GAP;
+		glColor3f(BACKGROUND_R, BACKGROUND_G, BACKGROUND_B);
+		glBegin(GL_QUADS);
+		fillRect(x, y, HudLayout.SLOT_ITEM_WIDTH, HudLayout.SLOT_HEIGHT);
+		glEnd();
+
+		glColor3f(ACCENT_R, ACCENT_G, ACCENT_B);
+		glLineWidth(2.0f);
+		glBegin(GL_LINES);
+		outlineRect(x, y, HudLayout.SLOT_ITEM_WIDTH, HudLayout.SLOT_HEIGHT);
+		glEnd();
+		glLineWidth(1.0f);
+
+		CharUtils.drawTextRuns(new TextRun[] {
+			new TextRun("X: " + position.x, x + 12, y + 16, 1.0f, 1.0f, 1.0f, TextRun.POLICE_TXT),
+			new TextRun("Y: " + position.y, x + 12, y + 40, 1.0f, 1.0f, 1.0f, TextRun.POLICE_TXT),
+		});
 	}
 
 	/**

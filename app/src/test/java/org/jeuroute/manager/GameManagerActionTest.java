@@ -50,6 +50,7 @@ class GameManagerActionTest {
 		GameManager gameManager = new GameManager(new Random(42));
 		Hud hud = gameManager.getHud();
 		MouseHandler mouseHandler = gameManager.getMouseHandlerManager().getMouseHandler();
+		int initialPersonCount = gameManager.getPersonManager().getPeople().size();
 
 		var menuBounds = HudLayout.rootButtonBounds(0, 1280, 720);
 		assertTrue(hud.handleClick(menuBounds.x() + 10, menuBounds.y() + 10, 1280, 720));
@@ -63,15 +64,14 @@ class GameManagerActionTest {
 		mouseHandler.onPersonPlacement(dropPosition.x, dropPosition.y);
 		gameManager.update(0.0);
 
-		assertEquals(1, gameManager.getPersonManager().getPeople().size());
-		assertNotNull(gameManager.getPersonManager().getPeople().getFirst().getDestinationHouse());
-		assertTrue(
-			gameManager
-				.getWorldMap()
-				.getTerrainMap()
-				.isLand(gameManager.getPersonManager().getPeople().getFirst().getPosition())
+		assertEquals(initialPersonCount + 1, gameManager.getPersonManager().getPeople().size());
+		var addedPerson = gameManager.getPersonManager().getPeople().getLast();
+		assertNotNull(addedPerson.getDestinationHouse());
+		assertTrue(gameManager.getWorldMap().getTerrainMap().isLand(addedPerson.getPosition()));
+		assertEquals(
+			Integer.toString(initialPersonCount + 1),
+			gameManager.getHudManager().getIndicator("people").getValue()
 		);
-		assertEquals("1", gameManager.getHudManager().getIndicator("people").getValue());
 	}
 
 	@Test
@@ -89,6 +89,19 @@ class GameManagerActionTest {
 		assertTrue(gameManager.isDebugModeEnabled());
 		gameManager.getActionHandlers().get("toggle-debug").run();
 		assertFalse(gameManager.isDebugModeEnabled());
+	}
+
+	@Test
+	void debugMouseCoordinatesAreAvailableOnlyWhileDebugModeIsEnabled() {
+		GameManager gameManager = new GameManager(new Random(42));
+		MouseHandler mouseHandler = gameManager.getMouseHandlerManager().getMouseHandler();
+		mouseHandler.onMove(128.2, -45.7);
+
+		assertNull(gameManager.getDebugMousePosition());
+		gameManager.getActionHandlers().get("toggle-debug").run();
+		assertEquals(new Point(128, -46), gameManager.getDebugMousePosition());
+		gameManager.getActionHandlers().get("toggle-debug").run();
+		assertNull(gameManager.getDebugMousePosition());
 	}
 
 	@Test
