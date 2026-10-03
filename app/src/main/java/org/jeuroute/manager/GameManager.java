@@ -327,7 +327,8 @@ public final class GameManager {
 			() -> Integer.toString(worldMap.getRoadGraph().getRoads().size()),
 			() -> Integer.toString(worldMap.getFixedEntityManager().getIntersections().size()),
 			() -> Integer.toString(vehicleManager.getVehicles().size()),
-			() -> Integer.toString(worldMap.getStations().size())
+			() -> Integer.toString(worldMap.getStations().size()),
+			() -> Integer.toString(personManager.getPeople().size())
 		);
 		actionHandlers.register("toggle-person", () -> {
 			MouseHandler handler = mouseHandlerManager.getMouseHandler();

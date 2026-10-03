@@ -1,7 +1,6 @@
 package org.jeuroute.model.world.terrain.navigation;
 
 import java.awt.Point;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -48,15 +47,17 @@ public final class TerrainPathfinder {
 
 		int[] previous = new int[TerrainMap.COLUMNS * TerrainMap.ROWS];
 		java.util.Arrays.fill(previous, -2);
+		int[] pending = new int[previous.length];
+		int pendingHead = 0;
+		int pendingTail = 0;
 		previous[startIndex] = -1;
-		ArrayDeque<Integer> pending = new ArrayDeque<>();
-		pending.add(startIndex);
+		pending[pendingTail++] = startIndex;
+		int[] directionOrder = shuffledDirectionOrder(random);
 
-		while (!pending.isEmpty() && previous[destinationIndex] == -2) {
-			int currentIndex = pending.removeFirst();
+		while (pendingHead < pendingTail && previous[destinationIndex] == -2) {
+			int currentIndex = pending[pendingHead++];
 			int currentColumn = currentIndex % TerrainMap.COLUMNS;
 			int currentRow = currentIndex / TerrainMap.COLUMNS;
-			int[] directionOrder = shuffledDirectionOrder(random);
 			for (int directionIndex : directionOrder) {
 				int nextColumn = currentColumn + DIRECTIONS[directionIndex][0];
 				int nextRow = currentRow + DIRECTIONS[directionIndex][1];
@@ -68,7 +69,7 @@ public final class TerrainPathfinder {
 					continue;
 				}
 				previous[nextIndex] = currentIndex;
-				pending.addLast(nextIndex);
+				pending[pendingTail++] = nextIndex;
 			}
 		}
 

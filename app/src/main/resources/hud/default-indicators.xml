@@ -7,5 +7,6 @@
         <indicator ref="intersections" />
         <indicator ref="vehicles" />
         <indicator ref="stations" />
+        <indicator ref="people" />
     </slot>
 </hud>

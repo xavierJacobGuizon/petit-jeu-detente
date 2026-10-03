@@ -3,10 +3,14 @@ package org.jeuroute.gamecore;
 import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT;
 
 import java.awt.Point;
+import java.util.ArrayList;
+import java.util.List;
 import org.jeuroute.gamecore.enums.MouseMode;
 import org.jeuroute.model.records.preview.enums.PlacementPreviewType;
 
 public class MouseHandler {
+
+	private static final double PERSON_PLACEMENT_SPACING = 20.0;
 
 	private Point dragStart;
 	private Point currentPosition;
@@ -20,12 +24,21 @@ public class MouseHandler {
 	private Point pendingStationPosition;
 	private Point pendingDepotPosition;
 	private Point pendingLineStationSelection;
-	private Point pendingPersonPosition;
+	private final List<Point> pendingPersonPlacements = new ArrayList<>();
+	private boolean personPlacementHeld;
+	private Point lastPersonPlacementPosition;
 
 	public void onMove(double x, double y) {
 		mousePosition = new Point((int) Math.round(x), (int) Math.round(y));
 		if (dragging) {
 			currentPosition = new Point(mousePosition);
+		}
+		if (personPlacementHeld) {
+			if (activeMode == MouseMode.PERSON) {
+				queuePersonPlacementsTo(mousePosition);
+			} else {
+				endPersonPlacementDrag();
+			}
 		}
 	}
 
@@ -38,7 +51,7 @@ public class MouseHandler {
 			case STATION -> onStationPlacement(x, y);
 			case DEPOT -> onDepotPlacement(x, y);
 			case LINE -> onLineStationSelection(x, y);
-			case PERSON -> onPersonPlacement(x, y);
+			case PERSON -> beginPersonPlacement(x, y);
 			case VEHICLE -> onVehiclePlacement(x, y);
 			case ROUTE -> onRoutePlacement(x, y);
 			case NONE -> {
@@ -48,8 +61,50 @@ public class MouseHandler {
 
 	public void onPersonPlacement(double x, double y) {
 		if (activeMode == MouseMode.PERSON) {
-			pendingPersonPosition = new Point((int) Math.round(x), (int) Math.round(y));
+			Point position = new Point((int) Math.round(x), (int) Math.round(y));
+			pendingPersonPlacements.add(position);
+			lastPersonPlacementPosition = position;
 		}
+	}
+
+	private void beginPersonPlacement(double x, double y) {
+		personPlacementHeld = true;
+		lastPersonPlacementPosition = null;
+		onPersonPlacement(x, y);
+	}
+
+	private void queuePersonPlacementsTo(Point position) {
+		if (lastPersonPlacementPosition == null) {
+			pendingPersonPlacements.add(new Point(position));
+			lastPersonPlacementPosition = new Point(position);
+			return;
+		}
+
+		double distance = lastPersonPlacementPosition.distance(position);
+		while (distance >= PERSON_PLACEMENT_SPACING) {
+			double ratio = PERSON_PLACEMENT_SPACING / distance;
+			Point sample = new Point(
+				(int) Math.round(
+					lastPersonPlacementPosition.x +
+						(position.x - lastPersonPlacementPosition.x) * ratio
+				),
+				(int) Math.round(
+					lastPersonPlacementPosition.y +
+						(position.y - lastPersonPlacementPosition.y) * ratio
+				)
+			);
+			if (sample.equals(lastPersonPlacementPosition)) {
+				break;
+			}
+			pendingPersonPlacements.add(sample);
+			lastPersonPlacementPosition = sample;
+			distance = lastPersonPlacementPosition.distance(position);
+		}
+	}
+
+	private void endPersonPlacementDrag() {
+		personPlacementHeld = false;
+		lastPersonPlacementPosition = null;
 	}
 
 	public void onRoutePlacement(double x, double y) {
@@ -146,14 +201,19 @@ public class MouseHandler {
 		pendingStationPosition = null;
 		pendingDepotPosition = null;
 		pendingLineStationSelection = null;
-		pendingPersonPosition = null;
+		pendingPersonPlacements.clear();
+		endPersonPlacementDrag();
 	}
 
 	private void setActiveMode(MouseMode mode, boolean enabled) {
 		if (enabled) {
 			activeMode = mode;
+			if (mode != MouseMode.PERSON) {
+				endPersonPlacementDrag();
+			}
 		} else if (activeMode == mode) {
 			activeMode = MouseMode.NONE;
+			endPersonPlacementDrag();
 		}
 	}
 
@@ -196,14 +256,27 @@ public class MouseHandler {
 	}
 
 	public Point consumePersonPlacement() {
-		Point placement = pendingPersonPosition;
-		pendingPersonPosition = null;
-		return placement;
+		return pendingPersonPlacements.isEmpty() ? null : pendingPersonPlacements.removeFirst();
+	}
+
+	public List<Point> consumePersonPlacements() {
+		List<Point> placements = List.copyOf(pendingPersonPlacements);
+		pendingPersonPlacements.clear();
+		return placements;
 	}
 
 	public void onRelease(int button, double x, double y) {
 		mousePosition = new Point((int) Math.round(x), (int) Math.round(y));
-		if (button != GLFW_MOUSE_BUTTON_LEFT || dragStart == null) {
+		if (button != GLFW_MOUSE_BUTTON_LEFT) {
+			return;
+		}
+		if (personPlacementHeld) {
+			if (activeMode == MouseMode.PERSON) {
+				queuePersonPlacementsTo(mousePosition);
+			}
+			endPersonPlacementDrag();
+		}
+		if (dragStart == null) {
 			return;
 		}
 

@@ -16,7 +16,8 @@ public final class IndicatorRegistry implements Registry<HudIndicator> {
 		Supplier<String> roadCount,
 		Supplier<String> intersectionCount,
 		Supplier<String> vehicleCount,
-		Supplier<String> stationCount
+		Supplier<String> stationCount,
+		Supplier<String> personCount
 	) {
 		return register("fps", new HudIndicator("FPS", fpsValue, 0.45f, 0.85f, 0.75f))
 			.register("roads", new HudIndicator("R", roadCount, 0.12f, 0.35f, 0.42f))
@@ -25,7 +26,8 @@ public final class IndicatorRegistry implements Registry<HudIndicator> {
 				new HudIndicator("I", intersectionCount, 0.20f, 0.42f, 0.30f)
 			)
 			.register("vehicles", new HudIndicator("V", vehicleCount, 0.55f, 0.30f, 0.18f))
-			.register("stations", new HudIndicator("D", stationCount, 0.85f, 0.68f, 0.24f));
+			.register("stations", new HudIndicator("D", stationCount, 0.85f, 0.68f, 0.24f))
+			.register("people", new HudIndicator("P", personCount, 0.24f, 0.72f, 0.86f));
 	}
 
 	public IndicatorRegistry register(String indicatorId, HudIndicator indicator) {

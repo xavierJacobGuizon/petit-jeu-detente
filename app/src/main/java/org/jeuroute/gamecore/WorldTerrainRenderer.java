@@ -2,6 +2,7 @@ package org.jeuroute.gamecore;
 
 import static org.lwjgl.opengl.GL11.*;
 
+import org.jeuroute.gamecore.camera.WorldViewBounds;
 import org.jeuroute.model.world.terrain.TerrainMap;
 
 public final class WorldTerrainRenderer {
@@ -9,14 +10,41 @@ public final class WorldTerrainRenderer {
 	private WorldTerrainRenderer() {}
 
 	public static void render(TerrainMap terrain, double zoom) {
-		renderLandCells(terrain);
-		renderTerrainEdges(terrain, zoom);
+		render(terrain, zoom, WorldViewBounds.UNBOUNDED);
 	}
 
-	private static void renderLandCells(TerrainMap terrain) {
+	public static void render(TerrainMap terrain, double zoom, WorldViewBounds viewBounds) {
+		int firstColumn = firstCell(viewBounds.minX(), TerrainMap.ORIGIN_X, TerrainMap.COLUMNS);
+		int lastColumn = lastCell(viewBounds.maxX(), TerrainMap.ORIGIN_X, TerrainMap.COLUMNS);
+		int firstRow = firstCell(viewBounds.minY(), TerrainMap.ORIGIN_Y, TerrainMap.ROWS);
+		int lastRow = lastCell(viewBounds.maxY(), TerrainMap.ORIGIN_Y, TerrainMap.ROWS);
+		if (firstColumn > lastColumn || firstRow > lastRow) {
+			return;
+		}
+		renderLandCells(terrain, firstColumn, lastColumn, firstRow, lastRow);
+		renderTerrainEdges(terrain, zoom, firstColumn, lastColumn, firstRow, lastRow);
+	}
+
+	private static int firstCell(double minimum, int origin, int cellCount) {
+		int index = (int) Math.floor((minimum - origin) / TerrainMap.CELL_SIZE);
+		return Math.max(0, index);
+	}
+
+	private static int lastCell(double maximum, int origin, int cellCount) {
+		int index = (int) Math.floor((maximum - origin) / TerrainMap.CELL_SIZE);
+		return Math.min(cellCount - 1, index);
+	}
+
+	private static void renderLandCells(
+		TerrainMap terrain,
+		int firstColumn,
+		int lastColumn,
+		int firstRow,
+		int lastRow
+	) {
 		glBegin(GL_QUADS);
-		for (int row = 0; row < TerrainMap.ROWS; row++) {
-			for (int column = 0; column < TerrainMap.COLUMNS; column++) {
+		for (int row = firstRow; row <= lastRow; row++) {
+			for (int column = firstColumn; column <= lastColumn; column++) {
 				if (!terrain.isLandCell(column, row)) {
 					continue;
 				}
@@ -33,13 +61,20 @@ public final class WorldTerrainRenderer {
 		glEnd();
 	}
 
-	private static void renderTerrainEdges(TerrainMap terrain, double zoom) {
+	private static void renderTerrainEdges(
+		TerrainMap terrain,
+		double zoom,
+		int firstColumn,
+		int lastColumn,
+		int firstRow,
+		int lastRow
+	) {
 		glColor3f(0.09f, 0.19f, 0.13f);
 		glLineWidth(1.0f);
 		glBegin(GL_LINES);
 		int gridStep = zoom >= 0.75 ? 1 : 4;
-		for (int row = 0; row < TerrainMap.ROWS; row++) {
-			for (int column = 0; column < TerrainMap.COLUMNS; column++) {
+		for (int row = firstRow; row <= lastRow; row++) {
+			for (int column = firstColumn; column <= lastColumn; column++) {
 				if (!terrain.isLandCell(column, row)) {
 					continue;
 				}

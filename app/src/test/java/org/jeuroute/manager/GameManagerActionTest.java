@@ -71,6 +71,7 @@ class GameManagerActionTest {
 				.getTerrainMap()
 				.isLand(gameManager.getPersonManager().getPeople().getFirst().getPosition())
 		);
+		assertEquals("1", gameManager.getHudManager().getIndicator("people").getValue());
 	}
 
 	@Test

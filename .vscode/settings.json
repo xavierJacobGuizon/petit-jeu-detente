@@ -13,5 +13,6 @@
             "matchCommandLine": true
         }
     },
-    "chat.edits.openDiffOnFileSelect": true
+    "chat.edits.openDiffOnFileSelect": true,
+    "java.debug.settings.onBuildFailureProceed": true
 }

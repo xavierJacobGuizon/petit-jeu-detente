@@ -149,7 +149,7 @@ class AppTest {
 		assertEquals(List.of("fps"), configuration.slots().get(0).indicatorIds());
 		assertEquals(HudAnchor.TOP_RIGHT, configuration.slots().get(1).anchor());
 		assertEquals(
-			List.of("roads", "intersections", "vehicles", "stations"),
+			List.of("roads", "intersections", "vehicles", "stations", "people"),
 			configuration.slots().get(1).indicatorIds()
 		);
 		assertSame(configuration, sameConfiguration);
@@ -582,6 +582,28 @@ class AppTest {
 		mouseHandler.onPress(0, 74.6, 125.2);
 		assertEquals(new Point(75, 125), mouseHandler.consumeStationPlacement());
 		assertNull(mouseHandler.consumeStationPlacement());
+	}
+
+	@Test
+	void personPlacementDragQueuesSpacedInterpolatedPositions() {
+		MouseHandler mouseHandler = new MouseHandler();
+		mouseHandler.setPersonCreationEnabled(true);
+		mouseHandler.onPress(0, 100, 100);
+		mouseHandler.onMove(110, 100);
+		mouseHandler.onMove(151, 100);
+		mouseHandler.onRelease(0, 160, 100);
+		mouseHandler.onMove(200, 100);
+
+		assertEquals(
+			List.of(
+				new Point(100, 100),
+				new Point(120, 100),
+				new Point(140, 100),
+				new Point(160, 100)
+			),
+			mouseHandler.consumePersonPlacements()
+		);
+		assertTrue(mouseHandler.consumePersonPlacements().isEmpty());
 	}
 
 	@Test

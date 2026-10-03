@@ -53,6 +53,17 @@ public final class Camera2D {
 		);
 	}
 
+	public WorldViewBounds getVisibleWorldBounds(int viewportWidth, int viewportHeight) {
+		double halfWidth = viewportWidth / (2.0 * zoom);
+		double halfHeight = viewportHeight / (2.0 * zoom);
+		return new WorldViewBounds(
+			centerX - halfWidth,
+			centerY - halfHeight,
+			centerX + halfWidth,
+			centerY + halfHeight
+		);
+	}
+
 	public void panByScreenPixels(double horizontalPixels, double verticalPixels) {
 		centerX += horizontalPixels / zoom;
 		centerY += verticalPixels / zoom;

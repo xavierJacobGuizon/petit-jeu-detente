@@ -4,6 +4,7 @@ import static org.lwjgl.opengl.GL11.*;
 
 import java.awt.Point;
 import java.util.List;
+import org.jeuroute.gamecore.camera.WorldViewBounds;
 import org.jeuroute.model.records.preview.LinePreview;
 import org.jeuroute.model.records.preview.PlacementPreview;
 import org.jeuroute.model.records.preview.RoutePreview;
@@ -19,24 +20,40 @@ public final class WorldPreviewRenderer {
 	private WorldPreviewRenderer() {}
 
 	public static void renderWorldPreviews(WorldPreviewData previews, double zoom) {
-		renderRoadSnapIndicator(previews.routeSnapPoint(), zoom);
-		renderRoutePreview(previews.route(), zoom);
-		boolean placementValid = previews.placement() != null && previews.placement().valid();
-		renderStationRoadPreview(previews.stationRoadSegments(), placementValid, zoom);
-		renderPlacementPreview(previews.placement(), zoom);
-		renderLinePreview(previews.line(), zoom);
+		renderWorldPreviews(previews, zoom, WorldViewBounds.UNBOUNDED);
 	}
 
-	private static void renderRoutePreview(RoutePreview preview, double zoom) {
+	public static void renderWorldPreviews(
+		WorldPreviewData previews,
+		double zoom,
+		WorldViewBounds viewBounds
+	) {
+		renderRoadSnapIndicator(previews.routeSnapPoint(), zoom, viewBounds);
+		renderRoutePreview(previews.route(), zoom, viewBounds);
+		boolean placementValid = previews.placement() != null && previews.placement().valid();
+		renderStationRoadPreview(previews.stationRoadSegments(), placementValid, zoom, viewBounds);
+		renderPlacementPreview(previews.placement(), zoom, viewBounds);
+		renderLinePreview(previews.line(), zoom, viewBounds);
+	}
+
+	private static void renderRoutePreview(
+		RoutePreview preview,
+		double zoom,
+		WorldViewBounds viewBounds
+	) {
 		if (preview == null) {
 			return;
 		}
 		if (preview.valid()) {
-			renderRoutePlacementPreview(preview.roadSegments(), zoom);
+			renderRoutePlacementPreview(preview.roadSegments(), zoom, viewBounds);
 		} else {
-			renderInvalidRoutePreview(preview.start(), preview.end(), zoom);
+			Point start = preview.start();
+			Point end = preview.end();
+			if (viewBounds.intersectsSegment(start.x, start.y, end.x, end.y, 5.0)) {
+				renderInvalidRoutePreview(start, end, zoom);
+			}
 		}
-		renderFutureIntersections(preview.futureIntersections(), zoom);
+		renderFutureIntersections(preview.futureIntersections(), zoom, viewBounds);
 	}
 
 	private static void renderInvalidRoutePreview(Point start, Point end, double zoom) {
@@ -54,11 +71,28 @@ public final class WorldPreviewRenderer {
 	}
 
 	public static void renderPlacementPreview(PlacementPreview preview, double zoom) {
+		renderPlacementPreview(preview, zoom, WorldViewBounds.UNBOUNDED);
+	}
+
+	private static void renderPlacementPreview(
+		PlacementPreview preview,
+		double zoom,
+		WorldViewBounds viewBounds
+	) {
 		if (preview == null) {
 			return;
 		}
 
 		Point position = preview.position();
+		double padding = markerHalfSize(preview.type());
+		if (preview.type() == PlacementPreviewType.STATION) {
+			padding = Math.max(padding, Station.CAPTURE_RADIUS);
+		} else if (preview.type() == PlacementPreviewType.DEPOT) {
+			padding = Depot.ACCESS_OFFSET + Depot.ROAD_STUB_LENGTH;
+		}
+		if (!viewBounds.contains(position.x, position.y, padding + 1.0)) {
+			return;
+		}
 		renderTypeSpecificPlacementPreview(preview, position, zoom);
 		renderPlacementMarker(position, markerHalfSize(preview.type()), preview.valid(), zoom);
 	}
@@ -122,6 +156,15 @@ public final class WorldPreviewRenderer {
 	}
 
 	public static void renderStationRoadPreview(List<Road> roads, boolean valid, double zoom) {
+		renderStationRoadPreview(roads, valid, zoom, WorldViewBounds.UNBOUNDED);
+	}
+
+	private static void renderStationRoadPreview(
+		List<Road> roads,
+		boolean valid,
+		double zoom,
+		WorldViewBounds viewBounds
+	) {
 		if (roads.isEmpty()) {
 			return;
 		}
@@ -131,6 +174,9 @@ public final class WorldPreviewRenderer {
 		for (Road road : roads) {
 			Point start = road.getStart();
 			Point end = road.getEnd();
+			if (!viewBounds.intersectsSegment(start.x, start.y, end.x, end.y, 1.5)) {
+				continue;
+			}
 			glVertex2i(start.x, start.y);
 			glVertex2i(end.x, end.y);
 		}
@@ -143,6 +189,14 @@ public final class WorldPreviewRenderer {
 	}
 
 	public static void renderLinePreview(LinePreview preview, double zoom) {
+		renderLinePreview(preview, zoom, WorldViewBounds.UNBOUNDED);
+	}
+
+	private static void renderLinePreview(
+		LinePreview preview,
+		double zoom,
+		WorldViewBounds viewBounds
+	) {
 		if (preview == null) {
 			return;
 		}
@@ -158,12 +212,17 @@ public final class WorldPreviewRenderer {
 		for (int index = 1; index < stations.size(); index++) {
 			Point start = stations.get(index - 1);
 			Point end = stations.get(index);
+			if (!viewBounds.intersectsSegment(start.x, start.y, end.x, end.y, 1.0)) {
+				continue;
+			}
 			glVertex2i(start.x, start.y);
 			glVertex2i(end.x, end.y);
 		}
 		Point lastStation = stations.getLast();
-		glVertex2i(lastStation.x, lastStation.y);
-		glVertex2i(cursor.x, cursor.y);
+		if (viewBounds.intersectsSegment(lastStation.x, lastStation.y, cursor.x, cursor.y, 1.0)) {
+			glVertex2i(lastStation.x, lastStation.y);
+			glVertex2i(cursor.x, cursor.y);
+		}
 		glEnd();
 		endDashedLines();
 	}
@@ -173,12 +232,23 @@ public final class WorldPreviewRenderer {
 	}
 
 	public static void renderRoadSnapIndicator(Point center, double zoom) {
+		renderRoadSnapIndicator(center, zoom, WorldViewBounds.UNBOUNDED);
+	}
+
+	private static void renderRoadSnapIndicator(
+		Point center,
+		double zoom,
+		WorldViewBounds viewBounds
+	) {
 		if (center == null) {
 			return;
 		}
 
 		double pulse = (Math.sin((System.nanoTime() / 1_000_000_000.0) * 3.5) + 1.0) / 2.0;
 		double radius = 12.0 + pulse * 7.0;
+		if (!viewBounds.contains(center.x, center.y, radius)) {
+			return;
+		}
 		glColor3f(1.0f, 0.9f, 0.28f);
 		glLineWidth((float) (2.5 * zoom));
 		glBegin(GL_LINE_LOOP);
@@ -195,12 +265,23 @@ public final class WorldPreviewRenderer {
 	}
 
 	public static void renderFutureIntersections(List<Point> intersections, double zoom) {
+		renderFutureIntersections(intersections, zoom, WorldViewBounds.UNBOUNDED);
+	}
+
+	private static void renderFutureIntersections(
+		List<Point> intersections,
+		double zoom,
+		WorldViewBounds viewBounds
+	) {
 		if (intersections.isEmpty()) {
 			return;
 		}
 		glColor3f(0.0f, 0.0f, 1.0f);
 		glBegin(GL_QUADS);
 		for (Point point : intersections) {
+			if (!viewBounds.contains(point.x, point.y, 5.0)) {
+				continue;
+			}
 			glVertex2i(point.x - 5, point.y - 5);
 			glVertex2i(point.x + 5, point.y - 5);
 			glVertex2i(point.x + 5, point.y + 5);
@@ -214,6 +295,14 @@ public final class WorldPreviewRenderer {
 	}
 
 	public static void renderRoutePlacementPreview(List<Road> segments, double zoom) {
+		renderRoutePlacementPreview(segments, zoom, WorldViewBounds.UNBOUNDED);
+	}
+
+	private static void renderRoutePlacementPreview(
+		List<Road> segments,
+		double zoom,
+		WorldViewBounds viewBounds
+	) {
 		if (segments.isEmpty()) {
 			return;
 		}
@@ -223,6 +312,9 @@ public final class WorldPreviewRenderer {
 		for (Road segment : segments) {
 			Point start = segment.getStart();
 			Point end = segment.getEnd();
+			if (!viewBounds.intersectsSegment(start.x, start.y, end.x, end.y, 2.5)) {
+				continue;
+			}
 			glVertex2i(start.x, start.y);
 			glVertex2i(end.x, end.y);
 		}

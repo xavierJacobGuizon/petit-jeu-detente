@@ -133,6 +133,14 @@ public class Vehicle {
 		return new Point(position);
 	}
 
+	public int getPositionX() {
+		return position.x;
+	}
+
+	public int getPositionY() {
+		return position.y;
+	}
+
 	public Road getRoad() {
 		return road;
 	}

@@ -19,6 +19,14 @@ public final class House {
 		return new Point(position);
 	}
 
+	public int getPositionX() {
+		return position.x;
+	}
+
+	public int getPositionY() {
+		return position.y;
+	}
+
 	public void display(double zoom) {
 		skin.display(position, zoom);
 	}

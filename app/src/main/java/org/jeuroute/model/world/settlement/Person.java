@@ -11,16 +11,19 @@ public final class Person {
 	public static final double WALK_SPEED_PIXELS_PER_SECOND = 28.0;
 
 	private final PersonSkin skin = new PersonSkin();
+	private final House homeHouse;
 	private double x;
 	private double y;
 	private House currentHouse;
-	private House destinationHouse;
+	private PersonGoal currentGoal;
 	private List<Point> waypoints = List.of();
 	private int nextWaypointIndex;
 	private long idleTicksRemaining;
+	private boolean temporaryDetourApplied;
 
-	public Person(Point position) {
+	public Person(Point position, House homeHouse) {
 		Objects.requireNonNull(position, "position cannot be null");
+		this.homeHouse = Objects.requireNonNull(homeHouse, "homeHouse cannot be null");
 		x = position.x;
 		y = position.y;
 	}
@@ -29,28 +32,59 @@ public final class Person {
 		return new Point((int) Math.round(x), (int) Math.round(y));
 	}
 
+	public double getPreciseX() {
+		return x;
+	}
+
+	public double getPreciseY() {
+		return y;
+	}
+
 	public House getCurrentHouse() {
 		return currentHouse;
 	}
 
+	public House getHomeHouse() {
+		return homeHouse;
+	}
+
 	public House getDestinationHouse() {
-		return destinationHouse;
+		return currentGoal == null ? null : currentGoal.destinationHouse();
+	}
+
+	public PersonGoal getCurrentGoal() {
+		return currentGoal;
 	}
 
 	public boolean isWalking() {
-		return destinationHouse != null;
+		return currentGoal != null;
 	}
 
 	public double getIdleSecondsRemaining() {
 		return idleTicksRemaining * SimulationTick.STEP_SECONDS;
 	}
 
-	public boolean walkTo(House house, List<Point> route) {
-		destinationHouse = Objects.requireNonNull(house, "house cannot be null");
+	public boolean beginJourney(PersonGoal goal, List<Point> route) {
+		currentGoal = Objects.requireNonNull(goal, "goal cannot be null");
 		waypoints = route.stream().map(Point::new).toList();
 		nextWaypointIndex = 0;
 		idleTicksRemaining = 0;
+		temporaryDetourApplied = false;
 		return waypoints.isEmpty() && arriveAtDestination();
+	}
+
+	public boolean canAcceptTemporaryDetour() {
+		return isWalking() && !temporaryDetourApplied;
+	}
+
+	public boolean replaceRoute(List<Point> route) {
+		if (!canAcceptTemporaryDetour() || route.isEmpty()) {
+			return false;
+		}
+		waypoints = route.stream().map(Point::new).toList();
+		nextWaypointIndex = 0;
+		temporaryDetourApplied = true;
+		return true;
 	}
 
 	public boolean advanceMovement(double deltaSeconds) {
@@ -114,11 +148,11 @@ public final class Person {
 	}
 
 	private boolean arriveAtDestination() {
-		House arrivedAt = destinationHouse;
-		x = arrivedAt.getPosition().x;
-		y = arrivedAt.getPosition().y;
-		currentHouse = arrivedAt;
-		destinationHouse = null;
+		Point destination = currentGoal.destination();
+		x = destination.x;
+		y = destination.y;
+		currentHouse = currentGoal.destinationHouse();
+		currentGoal = null;
 		waypoints = List.of();
 		nextWaypointIndex = 0;
 		return true;

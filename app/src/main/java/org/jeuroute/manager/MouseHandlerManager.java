@@ -144,8 +144,11 @@ public class MouseHandlerManager {
 	}
 
 	private void createPersonAfterClick() {
-		Point position = mouseHandler.consumePersonPlacement();
-		if (position != null && personManager != null) {
+		List<Point> placements = mouseHandler.consumePersonPlacements();
+		if (personManager == null) {
+			return;
+		}
+		for (Point position : placements) {
 			personManager.addPerson(position);
 		}
 	}

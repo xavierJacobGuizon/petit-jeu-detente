@@ -8,6 +8,7 @@ import org.jeuroute.gamecore.WorldDebugRenderer;
 import org.jeuroute.gamecore.WorldPreviewRenderer;
 import org.jeuroute.gamecore.WorldRenderer;
 import org.jeuroute.gamecore.camera.Camera2D;
+import org.jeuroute.gamecore.camera.WorldViewBounds;
 import org.jeuroute.gamecore.hud.presentation.HudRenderer;
 import org.jeuroute.manager.GameManager;
 import org.jeuroute.model.records.world.WorldRenderData;
@@ -84,14 +85,19 @@ public class App {
 		glLoadIdentity();
 		glPushMatrix();
 		camera.apply(window.getWidth(), window.getHeight());
+		WorldViewBounds viewBounds = camera.getVisibleWorldBounds(
+			window.getWidth(),
+			window.getHeight()
+		);
 
-		WorldRenderer.renderWorld(worldRenderData, camera.getZoom());
+		WorldRenderer.renderWorld(worldRenderData, camera.getZoom(), viewBounds);
 		WorldPreviewRenderer.renderWorldPreviews(
 			gameManager.getWorldPreviewData(),
-			camera.getZoom()
+			camera.getZoom(),
+			viewBounds
 		);
 		if (gameManager.isDebugModeEnabled()) {
-			WorldDebugRenderer.renderDestinations(worldRenderData, camera.getZoom());
+			WorldDebugRenderer.renderDestinations(worldRenderData, camera.getZoom(), viewBounds);
 		}
 		glPopMatrix();
 		glLoadIdentity();
