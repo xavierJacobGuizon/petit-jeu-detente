@@ -6,6 +6,7 @@
 - When the user asks for analysis, recommendations, or explicitly says not to edit, inspect and explain options without changing files. Implement when the user clearly asks for a change.
 - Prefer focused, low-noise investigation: start from the named file or behavior and inspect nearby ownership boundaries before broad searches.
 - Preserve user edits. Do not revert unrelated changes or overwrite changed files without first reading their current contents.
+- **GitHub**: never commit or push without an explicit request; preserve local changes and exclude generated outputs and secrets.
 
 ## Architecture
 
@@ -13,8 +14,16 @@
 - Avoid both responsibility-heavy classes and abstractions created only for hypothetical reuse. Explain meaningful tradeoffs before broad refactors.
 - Prefer reusable components with explicit configuration and per-instance state. UI window management must support multiple windows, z-order, lifecycle, and input capture centrally; renderers should draw and delegate content rather than own window behavior.
 - Keep simulation independent of camera visibility. Cull for rendering, not for game rules.
+- **Game rules**: never silently invent a gameplay rule.
 - Avoid recomputing expensive data each frame when it can be cached and invalidated by meaningful changes. Profile before optimizing; keep debug visualization throttled and buffered/instanced for large populations.
 - Follow established ownership patterns: `GameManager` orchestrates game collaborators, registries own handler registration, XML resources are parsed through shared caches, and `WorldRenderer` delegates entity presentation to the existing rendering abstractions.
+
+## Package Organization
+
+- Organize packages by domain and responsibility, not only by Java type. Keep enums in concept-local `enums` packages, and records under `model/records`, grouped by domain.
+- Keep generated data separate from the algorithms that create it. For terrain, `TerrainMap` owns the terrain data; implementations of `TerrainGenerator` live under `terrain/generation`.
+- Avoid duplicate or parallel package trees, generic dumping packages, and empty packages. Before moving types, verify their current location and update all consumers together.
+- For procedural generation, inject `Random` so tests can reproduce maps; keep random generation as the default unless the feature requires persisted seeds.
 
 ## Java and Formatting
 
