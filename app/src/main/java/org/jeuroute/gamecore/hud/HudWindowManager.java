@@ -128,6 +128,20 @@ public final class HudWindowManager {
 		return wasCaptured;
 	}
 
+	public boolean handleScroll(double mouseX, double mouseY, double scrollAmount) {
+		for (int index = windows.size() - 1; index >= 0; index--) {
+			HudWindow window = windows.get(index);
+			if (!window.bounds().contains(mouseX, mouseY)) {
+				continue;
+			}
+			if (window.contentBounds().contains(mouseX, mouseY)) {
+				window.handleContentScroll(mouseX, mouseY, scrollAmount);
+			}
+			return true;
+		}
+		return false;
+	}
+
 	private void bringToFront(int index) {
 		if (index == windows.size() - 1) {
 			return;

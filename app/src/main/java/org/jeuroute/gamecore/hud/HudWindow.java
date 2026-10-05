@@ -95,6 +95,10 @@ public final class HudWindow {
 		return contentRenderer.handleClick(contentBounds(), mouseX, mouseY);
 	}
 
+	boolean handleContentScroll(double mouseX, double mouseY, double scrollAmount) {
+		return contentRenderer.handleScroll(contentBounds(), mouseX, mouseY, scrollAmount);
+	}
+
 	void moveTo(int nextX, int nextY) {
 		x = nextX;
 		y = nextY;
@@ -114,6 +118,15 @@ public final class HudWindow {
 		void render(HudBounds contentBounds);
 
 		default boolean handleClick(HudBounds contentBounds, double mouseX, double mouseY) {
+			return false;
+		}
+
+		default boolean handleScroll(
+			HudBounds contentBounds,
+			double mouseX,
+			double mouseY,
+			double scrollAmount
+		) {
 			return false;
 		}
 	}

@@ -73,6 +73,35 @@ class HudWindowManagerTest {
 	}
 
 	@Test
+	void scrollOverWindowContentIsForwardedAndConsumed() {
+		int[] scrollCount = { 0 };
+		HudWindow.ContentRenderer contentRenderer = new HudWindow.ContentRenderer() {
+			@Override
+			public void render(org.jeuroute.model.records.hud.HudBounds contentBounds) {}
+
+			@Override
+			public boolean handleScroll(
+				org.jeuroute.model.records.hud.HudBounds contentBounds,
+				double mouseX,
+				double mouseY,
+				double scrollAmount
+			) {
+				scrollCount[0]++;
+				return true;
+			}
+		};
+		HudWindowManager manager = new HudWindowManager();
+		HudWindow window = manager.open(
+			HudWindowSpec.standard("Profiler", 10, 20, 300, 200, contentRenderer)
+		);
+		var contentBounds = window.contentBounds();
+
+		assertTrue(manager.handleScroll(contentBounds.x() + 5, contentBounds.y() + 5, -1.0));
+		assertEquals(1, scrollCount[0]);
+		assertFalse(manager.handleScroll(500, 500, -1.0));
+	}
+
+	@Test
 	void rightBorderResizesWidthOnly() {
 		HudWindowManager manager = new HudWindowManager();
 		HudWindow window = manager.open(

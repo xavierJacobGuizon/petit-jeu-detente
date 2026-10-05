@@ -118,13 +118,7 @@ public final class DebugProfilerWindowContent implements HudWindow.ContentRender
 			renderCsvButton(contentBounds, csvIsRecording);
 		}
 		CharUtils.drawTextRuns(textRuns);
-		HudBounds profilerBounds = new HudBounds(
-			contentBounds.x() + MOUSE_COLUMN_WIDTH,
-			contentBounds.y() + DATA_TOP,
-			Math.max(0, contentBounds.width() - MOUSE_COLUMN_WIDTH),
-			Math.max(0, contentBounds.height() - DATA_TOP)
-		);
-		profilerRenderer.render(profiler, profilerBounds);
+		profilerRenderer.render(profiler, profilerBounds(contentBounds));
 	}
 
 	@Override
@@ -146,6 +140,29 @@ public final class DebugProfilerWindowContent implements HudWindow.ContentRender
 			return true;
 		}
 		return false;
+	}
+
+	@Override
+	public boolean handleScroll(
+		HudBounds contentBounds,
+		double mouseX,
+		double mouseY,
+		double scrollAmount
+	) {
+		HudBounds profilerBounds = profilerBounds(contentBounds);
+		if (!profilerBounds.contains(mouseX, mouseY)) {
+			return false;
+		}
+		return profilerRenderer.handleScroll(scrollAmount, profilerBounds);
+	}
+
+	private static HudBounds profilerBounds(HudBounds contentBounds) {
+		return new HudBounds(
+			contentBounds.x() + MOUSE_COLUMN_WIDTH,
+			contentBounds.y() + DATA_TOP,
+			Math.max(0, contentBounds.width() - MOUSE_COLUMN_WIDTH),
+			Math.max(0, contentBounds.height() - DATA_TOP)
+		);
 	}
 
 	private void updateTextRuns(

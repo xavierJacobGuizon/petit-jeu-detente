@@ -18,13 +18,13 @@ import org.jeuroute.model.world.transport.Vehicle;
  * ligne). Extrait de {@link GameManager} afin de séparer cette responsabilité
  * du reste de l'orchestration du jeu.
  */
-final class LineVehicleDialogController {
+public final class LineVehicleDialogController {
 
 	private final LineManager lineManager;
 	private final VehicleManager vehicleManager;
 	private final Supplier<Hud> hudSupplier;
 
-	LineVehicleDialogController(
+	public LineVehicleDialogController(
 		LineManager lineManager,
 		VehicleManager vehicleManager,
 		Supplier<Hud> hudSupplier
@@ -38,7 +38,7 @@ final class LineVehicleDialogController {
 		return hudSupplier.get();
 	}
 
-	void openLineManagementDialog() {
+	public void openLineManagementDialog() {
 		List<TransitLine> lines = lineManager.getLines();
 		if (lines.isEmpty()) {
 			List<HudButton> options = new ArrayList<>();
@@ -65,6 +65,34 @@ final class LineVehicleDialogController {
 		}
 		options.add(new HudButton("FERMER", () -> {}));
 		hud().showDialog("LIGNES ET VEHICULES", options);
+	}
+
+	public void openVehicleListDialog() {
+		if (vehicleManager.getVehicles().isEmpty()) {
+			List<HudButton> options = new ArrayList<>();
+			options.add(new HudButton("FERMER", () -> {}));
+			hud().showDialog("AUCUN VEHICULE", options);
+			return;
+		}
+
+		List<HudButton> options = new ArrayList<>();
+		for (Vehicle vehicle : vehicleManager.getVehicles()) {
+			int vehicleNumber = vehicleManager.getVehicleNumber(vehicle);
+			TransitLine assignedLine = vehicle.getAssignedLine();
+			if (assignedLine == null) {
+				options.add(new HudButton("VEHICULE " + vehicleNumber + " | LIBRE", () -> {}));
+				continue;
+			}
+
+			int lineNumber = lineManager.getLines().indexOf(assignedLine) + 1;
+			options.add(
+				new HudButton("VEHICULE " + vehicleNumber + " | LIGNE " + lineNumber, () ->
+					openVehicleRemovalDialog(vehicle, vehicleNumber, lineNumber)
+				)
+			);
+		}
+		options.add(new HudButton("FERMER", () -> {}));
+		hud().showDialog("VEHICULES", options);
 	}
 
 	private String assignedVehicleNumbers(TransitLine line) {
@@ -117,34 +145,6 @@ final class LineVehicleDialogController {
 		}
 		options.add(new HudButton("RETOUR", () -> openLineOptionsDialog(line, lineNumber)));
 		hud().showDialog("AJOUTER DES VEHICULES", options);
-	}
-
-	void openVehicleListDialog() {
-		if (vehicleManager.getVehicles().isEmpty()) {
-			List<HudButton> options = new ArrayList<>();
-			options.add(new HudButton("FERMER", () -> {}));
-			hud().showDialog("AUCUN VEHICULE", options);
-			return;
-		}
-
-		List<HudButton> options = new ArrayList<>();
-		for (Vehicle vehicle : vehicleManager.getVehicles()) {
-			int vehicleNumber = vehicleManager.getVehicleNumber(vehicle);
-			TransitLine assignedLine = vehicle.getAssignedLine();
-			if (assignedLine == null) {
-				options.add(new HudButton("VEHICULE " + vehicleNumber + " | LIBRE", () -> {}));
-				continue;
-			}
-
-			int lineNumber = lineManager.getLines().indexOf(assignedLine) + 1;
-			options.add(
-				new HudButton("VEHICULE " + vehicleNumber + " | LIGNE " + lineNumber, () ->
-					openVehicleRemovalDialog(vehicle, vehicleNumber, lineNumber)
-				)
-			);
-		}
-		options.add(new HudButton("FERMER", () -> {}));
-		hud().showDialog("VEHICULES", options);
 	}
 
 	private void openVehicleRemovalDialog(Vehicle vehicle, int vehicleNumber, int lineNumber) {

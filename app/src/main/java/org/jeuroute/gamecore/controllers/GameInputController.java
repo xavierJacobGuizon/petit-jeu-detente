@@ -99,7 +99,11 @@ public final class GameInputController {
 	}
 
 	public void handleScroll(double scrollAmount) {
-		camera.zoomAt(scrollAmount, mouseX, mouseY, metrics.width(), metrics.height());
+		if (
+			hudWindowManager == null || !hudWindowManager.handleScroll(mouseX, mouseY, scrollAmount)
+		) {
+			camera.zoomAt(scrollAmount, mouseX, mouseY, metrics.width(), metrics.height());
+		}
 		updateWorldMousePosition();
 	}
 

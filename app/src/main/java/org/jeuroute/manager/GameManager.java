@@ -276,7 +276,7 @@ public final class GameManager {
 	private void initializeWorld() {
 		Depot depot = worldMap.initializeDefaultLayout();
 
-		for (int i = 0; i < 100000; i++) {
+		for (int i = 0; i < 50000; i++) {
 			personManager.addPerson(new Point(500, 500));
 		}
 
