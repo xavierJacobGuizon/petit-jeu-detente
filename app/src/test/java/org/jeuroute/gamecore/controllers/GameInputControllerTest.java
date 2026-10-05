@@ -1,4 +1,4 @@
-package org.jeuroute.gamecore;
+package org.jeuroute.gamecore.controllers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -8,8 +8,9 @@ import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_RIGHT;
 
 import java.awt.Point;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.jeuroute.gamecore.MouseHandler;
+import org.jeuroute.gamecore.WindowMetrics;
 import org.jeuroute.gamecore.camera.Camera2D;
-import org.jeuroute.gamecore.controllers.GameInputController;
 import org.junit.jupiter.api.Test;
 
 class GameInputControllerTest {
