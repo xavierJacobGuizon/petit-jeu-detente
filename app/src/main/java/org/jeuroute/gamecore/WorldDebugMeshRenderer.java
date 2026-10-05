@@ -7,6 +7,7 @@ import java.awt.Point;
 import java.nio.FloatBuffer;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Set;
 import org.jeuroute.gamecore.camera.WorldViewBounds;
 import org.jeuroute.model.records.world.WorldRenderData;
@@ -109,16 +110,30 @@ public final class WorldDebugMeshRenderer implements AutoCloseable {
 	}
 
 	public void updateDestinations(WorldRenderData world, WorldViewBounds viewBounds, double zoom) {
-		ensureCapacity(world.vehicles().size() + world.people().size());
+		List<DebugRouteLineMerger.Line> routeLines =
+			new PersonRouteGeometryCache().collectVisibleLines(world.people(), viewBounds);
+		updateDestinations(world, viewBounds, zoom, routeLines);
+	}
+
+	public void updateDestinations(
+		WorldRenderData world,
+		WorldViewBounds viewBounds,
+		double zoom,
+		List<DebugRouteLineMerger.Line> routeLines
+	) {
+		int maximumPersonLines = Math.max(1, (int) (PERSON_LINES_PER_ZOOM_UNIT * zoom));
+		int sampledPersonLineCount = Math.min(maximumPersonLines, routeLines.size());
+		ensureLineCapacity(world.vehicles().size() + sampledPersonLineCount);
+		ensureCircleCapacity(world.vehicles().size() + world.people().size());
 		lineData.clear();
 		circleData.clear();
 		visibleDestinationHouses.clear();
 
 		vehicleLineCount = appendVehicleLines(world, viewBounds);
 		personLineOffsetBytes = lineData.position() * Float.BYTES;
-		appendPersonLines(world, viewBounds);
+		appendPersonLines(routeLines, maximumPersonLines);
 		personLineCount = lineData.position() / FLOATS_PER_INSTANCE - vehicleLineCount;
-		limitPersonLines(zoom);
+		appendPersonDestinations(world, viewBounds);
 		vehicleCircleCount = appendVehicleCircles(world, viewBounds);
 		houseCircleOffsetBytes = circleData.position() * Float.BYTES;
 		appendHouseCircles(viewBounds);
@@ -224,7 +239,19 @@ public final class WorldDebugMeshRenderer implements AutoCloseable {
 		return count;
 	}
 
-	private void appendPersonLines(WorldRenderData world, WorldViewBounds viewBounds) {
+	private void appendPersonLines(
+		List<DebugRouteLineMerger.Line> routeLines,
+		int maximumPersonLines
+	) {
+		int sampledLineCount = Math.min(maximumPersonLines, routeLines.size());
+		for (int sampleIndex = 0; sampleIndex < sampledLineCount; sampleIndex++) {
+			int lineIndex = (int) (((long) sampleIndex * routeLines.size()) / sampledLineCount);
+			DebugRouteLineMerger.Line line = routeLines.get(lineIndex);
+			putInstance(lineData, line.startX(), line.startY(), line.endX(), line.endY());
+		}
+	}
+
+	private void appendPersonDestinations(WorldRenderData world, WorldViewBounds viewBounds) {
 		for (Person person : world.people()) {
 			if (person == null) {
 				continue;
@@ -235,23 +262,6 @@ public final class WorldDebugMeshRenderer implements AutoCloseable {
 			}
 			double destinationX = destinationHouse.getPositionX();
 			double destinationY = destinationHouse.getPositionY();
-			if (
-				viewBounds.intersectsSegment(
-					person.getPreciseX(),
-					person.getPreciseY(),
-					destinationX,
-					destinationY,
-					0.75
-				)
-			) {
-				putInstance(
-					lineData,
-					person.getPreciseX(),
-					person.getPreciseY(),
-					destinationX,
-					destinationY
-				);
-			}
 			if (viewBounds.contains(destinationX, destinationY, DESTINATION_RADIUS)) {
 				visibleDestinationHouses.add(destinationHouse);
 			}
@@ -284,26 +294,6 @@ public final class WorldDebugMeshRenderer implements AutoCloseable {
 				putInstance(circleData, x, y, x, y);
 			}
 		}
-	}
-
-	private void limitPersonLines(double zoom) {
-		int maximumLines = Math.max(1, (int) (PERSON_LINES_PER_ZOOM_UNIT * zoom));
-		if (personLineCount <= maximumLines) {
-			return;
-		}
-
-		int sampledLineCount = maximumLines;
-		int sourceOffset = vehicleLineCount * FLOATS_PER_INSTANCE;
-		for (int sampleIndex = 0; sampleIndex < sampledLineCount; sampleIndex++) {
-			int sourceLine = (int) (((long) sampleIndex * personLineCount) / sampledLineCount);
-			int source = sourceOffset + sourceLine * FLOATS_PER_INSTANCE;
-			int destination = sourceOffset + sampleIndex * FLOATS_PER_INSTANCE;
-			for (int component = 0; component < FLOATS_PER_INSTANCE; component++) {
-				lineData.put(destination + component, lineData.get(source + component));
-			}
-		}
-		personLineCount = sampledLineCount;
-		lineData.position((vehicleLineCount + personLineCount) * FLOATS_PER_INSTANCE);
 	}
 
 	private void setLineUniforms(float red, float green, float blue) {
@@ -351,12 +341,15 @@ public final class WorldDebugMeshRenderer implements AutoCloseable {
 		);
 	}
 
-	private void ensureCapacity(int requiredInstances) {
+	private void ensureLineCapacity(int requiredInstances) {
 		if (requiredInstances > lineCapacity) {
 			lineCapacity = growCapacity(lineCapacity, requiredInstances);
 			lineData = growFloatBuffer(lineData, lineCapacity);
 			resizeInstanceBuffer(lineInstanceBufferObject, lineCapacity);
 		}
+	}
+
+	private void ensureCircleCapacity(int requiredInstances) {
 		if (requiredInstances > circleCapacity) {
 			circleCapacity = growCapacity(circleCapacity, requiredInstances);
 			circleData = growFloatBuffer(circleData, circleCapacity);

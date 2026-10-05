@@ -3,14 +3,18 @@ package org.jeuroute.gamecore.hud;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.jeuroute.gamecore.hud.presentation.HudWindowRenderer;
 import org.jeuroute.model.records.hud.HudBounds;
 
 public final class HudWindowManager {
+
+	private final HudWindowRenderer hudWindowRenderer = new HudWindowRenderer();
 
 	private final List<HudWindow> windows = new ArrayList<>();
 	private final List<HudWindow> windowsView = Collections.unmodifiableList(windows);
 	private long nextWindowId;
 	private HudWindow activeWindow;
+
 	private PointerInteraction pointerInteraction = PointerInteraction.NONE;
 	private boolean pointerCaptured;
 	private int dragOffsetX;
@@ -19,6 +23,10 @@ public final class HudWindowManager {
 	private int resizeStartY;
 	private int resizeStartWidth;
 	private int resizeStartHeight;
+
+	public HudWindowRenderer getHudWindowRenderer() {
+		return this.hudWindowRenderer;
+	}
 
 	public HudWindow open(HudWindowSpec spec) {
 		HudWindow window = new HudWindow(nextWindowId++, spec);

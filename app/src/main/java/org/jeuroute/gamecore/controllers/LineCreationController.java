@@ -1,4 +1,4 @@
-package org.jeuroute.manager;
+package org.jeuroute.gamecore.controllers;
 
 import java.awt.Point;
 import java.util.ArrayList;
@@ -9,6 +9,10 @@ import java.util.function.Supplier;
 import org.jeuroute.gamecore.MouseHandler;
 import org.jeuroute.gamecore.hud.Hud;
 import org.jeuroute.gamecore.hud.elements.HudButton;
+import org.jeuroute.manager.FixedEntityManager;
+import org.jeuroute.manager.GameManager;
+import org.jeuroute.manager.LineManager;
+import org.jeuroute.manager.MouseHandlerManager;
 import org.jeuroute.model.records.preview.LinePreview;
 import org.jeuroute.model.records.preview.enums.LinePreviewStatus;
 import org.jeuroute.model.world.transport.Station;
@@ -44,10 +48,15 @@ public final class LineCreationController {
 		return hudSupplier.get();
 	}
 
+	/** Bascule le mode de création de ligne.
+	 * Active ou désactive la sélection des stations et l'affichage du bouton de validation.
+	 */
 	public void toggle() {
 		selectedStations.clear();
+
 		MouseHandler handler = mouseHandlerManager.getMouseHandler();
 		handler.setLineCreationEnabled(!handler.isLineCreationEnabled());
+
 		if (handler.isLineCreationEnabled()) {
 			showValidationAction();
 		} else {
@@ -59,10 +68,12 @@ public final class LineCreationController {
 		if (!mouseHandlerManager.getMouseHandler().isLineCreationEnabled()) {
 			return;
 		}
+
 		Station selectedStation = fixedEntityManager.findStationNear(clickPosition, 18.0);
 		if (selectedStation == null) {
 			return;
 		}
+
 		if (
 			selectedStations
 				.stream()
@@ -70,6 +81,7 @@ public final class LineCreationController {
 		) {
 			return;
 		}
+
 		if (
 			!selectedStations.isEmpty() &&
 			!lineManager.canConnect(selectedStations.getLast(), selectedStation)
@@ -80,6 +92,7 @@ public final class LineCreationController {
 			);
 			return;
 		}
+
 		selectedStations.add(selectedStation);
 		if (hud().getOneShotActionButton() == null) {
 			showValidationAction();
@@ -90,14 +103,17 @@ public final class LineCreationController {
 		if (selectedStations.isEmpty()) {
 			return null;
 		}
+
 		MouseHandler mouseHandler = mouseHandlerManager.getMouseHandler();
 		if (!mouseHandler.isLineCreationEnabled()) {
 			return null;
 		}
+
 		Point mousePosition = mouseHandler.getMousePosition();
 		if (mousePosition == null) {
 			return null;
 		}
+
 		LinePreviewStatus status = LinePreviewStatus.NORMAL;
 		Station hoveredStation = fixedEntityManager.findStationNear(mousePosition, 18.0);
 		if (hoveredStation != null) {
@@ -105,6 +121,7 @@ public final class LineCreationController {
 				? LinePreviewStatus.CONNECTABLE
 				: LinePreviewStatus.DISCONNECTED;
 		}
+
 		return new LinePreview(
 			this.selectedStations
 				.stream()

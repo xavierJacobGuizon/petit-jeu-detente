@@ -278,6 +278,22 @@ public final class RoadGraph {
 		return connections != null ? connections : List.of();
 	}
 
+	public Point getSharedRoadConnection(Road firstRoad, Road secondRoad) {
+		if (firstRoad == null || secondRoad == null || firstRoad == secondRoad) {
+			return null;
+		}
+		for (Point endpoint : List.of(firstRoad.getStart(), firstRoad.getEnd())) {
+			if (
+				secondRoad.hasEndpoint(endpoint) &&
+				getConnectedRoadsAt(endpoint).contains(firstRoad) &&
+				getConnectedRoadsAt(endpoint).contains(secondRoad)
+			) {
+				return new Point(endpoint);
+			}
+		}
+		return null;
+	}
+
 	public Road firstRightRoadAt(Point position, Point arrivalPoint) {
 		List<Road> connections = getConnectedRoadsAt(position);
 		double arrivalX = arrivalPoint.x - position.x;
@@ -417,6 +433,63 @@ public final class RoadGraph {
 			if (candidate.getLength() < bestLength) {
 				bestPath = candidate;
 				bestLength = candidate.getLength();
+			}
+		}
+		return Optional.ofNullable(bestPath);
+	}
+
+	public Optional<RoadPath> findPathBetweenRoadPositions(
+		Road startRoad,
+		Point startPosition,
+		Road destinationRoad,
+		Point destinationPosition
+	) {
+		if (
+			startRoad == null ||
+			destinationRoad == null ||
+			startPosition == null ||
+			destinationPosition == null ||
+			!roads.contains(startRoad) ||
+			!roads.contains(destinationRoad) ||
+			!startRoad.containsPoint(startPosition) ||
+			!destinationRoad.containsPoint(destinationPosition)
+		) {
+			return Optional.empty();
+		}
+
+		RoadPath bestPath = null;
+		if (startRoad == destinationRoad) {
+			bestPath = new RoadPath(
+				startPosition.equals(destinationPosition)
+					? List.of()
+					: List.of(new RoadLeg(startRoad, startPosition, destinationPosition))
+			);
+		}
+
+		for (Point startEndpoint : List.of(startRoad.getStart(), startRoad.getEnd())) {
+			for (Point destinationEndpoint : List.of(
+				destinationRoad.getStart(),
+				destinationRoad.getEnd()
+			)) {
+				Optional<RoadPath> middlePath = findPath(startEndpoint, destinationEndpoint);
+				if (middlePath.isEmpty()) {
+					continue;
+				}
+
+				List<RoadLeg> legs = new ArrayList<>();
+				if (!startPosition.equals(startEndpoint)) {
+					legs.add(new RoadLeg(startRoad, startPosition, startEndpoint));
+				}
+				legs.addAll(middlePath.get().getLegs());
+				if (!destinationEndpoint.equals(destinationPosition)) {
+					legs.add(
+						new RoadLeg(destinationRoad, destinationEndpoint, destinationPosition)
+					);
+				}
+				RoadPath candidate = new RoadPath(legs);
+				if (bestPath == null || candidate.getLength() < bestPath.getLength()) {
+					bestPath = candidate;
+				}
 			}
 		}
 		return Optional.ofNullable(bestPath);

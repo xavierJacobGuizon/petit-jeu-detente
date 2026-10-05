@@ -9,6 +9,7 @@ import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_RIGHT;
 import java.awt.Point;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jeuroute.gamecore.camera.Camera2D;
+import org.jeuroute.gamecore.controllers.GameInputController;
 import org.junit.jupiter.api.Test;
 
 class GameInputControllerTest {

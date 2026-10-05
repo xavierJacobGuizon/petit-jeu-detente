@@ -18,6 +18,14 @@
 - Avoid recomputing expensive data each frame when it can be cached and invalidated by meaningful changes. Profile before optimizing; keep debug visualization throttled and buffered/instanced for large populations.
 - Follow established ownership patterns: `GameManager` orchestrates game collaborators, registries own handler registration, XML resources are parsed through shared caches, and `WorldRenderer` delegates entity presentation to the existing rendering abstractions.
 
+### Type Roles
+
+- **Controller**: owns an input or UI use-case flow and its temporary interaction state; delegates persistent domain changes and rules to managers or domain systems. Controllers coordinate a workflow rather than owning a domain collection.
+- **Manager**: owns operations and lifecycle for a specific domain collection or service, such as vehicles, people, or lines. Keep each manager focused; do not use `Manager` as a name for a general-purpose singleton.
+- **GameManager**: the top-level composition and orchestration point. It wires collaborators and coordinates game initialization and update flow, while domain rules and specialized interaction flows stay delegated to their owners.
+- **Component**: use this name for a small reusable unit with explicit configuration and per-instance state, especially in UI or presentation. This project is not an ECS: do not use `Component` to imply passive ECS data; use a domain model for state and a `System` for cohesive simulation behavior.
+- Typical flow: input is handled by a controller, domain work is delegated to a manager or system, and `GameManager` coordinates the collaborators. These names describe project conventions, not universal Java rules.
+
 ## Package Organization
 
 - Organize packages by domain and responsibility, not only by Java type. Keep enums in concept-local `enums` packages, and records under `model/records`, grouped by domain.

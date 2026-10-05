@@ -2,190 +2,306 @@ package org.jeuroute.manager;
 
 import java.awt.Point;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import org.jeuroute.gamecore.PerformanceProfiler;
+import org.jeuroute.model.world.network.RoadGraph;
+import org.jeuroute.model.world.resources.ResourceBuilding;
 import org.jeuroute.model.world.settlement.House;
 import org.jeuroute.model.world.settlement.Person;
 import org.jeuroute.model.world.settlement.PersonGoal;
+import org.jeuroute.model.world.settlement.PersonRoute;
 import org.jeuroute.model.world.terrain.TerrainMap;
-import org.jeuroute.model.world.terrain.navigation.TerrainPathfinder;
+import org.jeuroute.model.world.transport.Depot;
 
-final class PersonJourneyPlanner {
+final class PersonJourneyPlanner implements JourneyPlanner<House, PersonGoal, PersonRoute> {
 
-	private static final double NON_OPTIMAL_ROUTE_CHANCE = 0.2;
 	private static final double MAX_DETOUR_RATIO = 1.35;
-	private static final double MIN_DETOUR_DISTANCE = TerrainMap.CELL_SIZE * 2.0;
-	private static final int DETOUR_ATTEMPTS = 16;
 	private static final double MIN_IDLE_SECONDS = 1.5;
 	private static final double IDLE_VARIATION_SECONDS = 7.0;
 
-	private final TerrainMap terrain;
-	private final TerrainPathfinder pathfinder;
+	private final PersonPathPlanner pathPlanner;
 	private final Random random;
 
 	PersonJourneyPlanner(TerrainMap terrain, Random random) {
-		this.terrain = terrain;
-		this.pathfinder = new TerrainPathfinder(terrain);
+		this(terrain, new RoadGraph(terrain), List.of(), List.of(), List.of(), random);
+	}
+
+	PersonJourneyPlanner(
+		TerrainMap terrain,
+		RoadGraph roadGraph,
+		List<House> houses,
+		List<ResourceBuilding> resourceBuildings,
+		List<Depot> depots,
+		Random random
+	) {
+		this(terrain, roadGraph, houses, resourceBuildings, depots, random, null);
+	}
+
+	PersonJourneyPlanner(
+		TerrainMap terrain,
+		RoadGraph roadGraph,
+		List<House> houses,
+		List<ResourceBuilding> resourceBuildings,
+		List<Depot> depots,
+		Random random,
+		PerformanceProfiler performanceProfiler
+	) {
+		pathPlanner = new PersonPathPlanner(
+			terrain,
+			roadGraph,
+			houses,
+			resourceBuildings,
+			depots,
+			performanceProfiler
+		);
 		this.random = random;
 	}
 
-	Optional<Journey> planInitialJourney(Point start, List<House> houses) {
-		List<House> nearestFirst = new ArrayList<>(houses);
-		nearestFirst.sort(Comparator.comparingDouble(house -> house.getPosition().distance(start)));
-		for (House house : nearestFirst) {
-			Optional<List<Point>> route = planRoute(start, house.getPosition());
-			if (route.isPresent()) {
-				return Optional.of(
-					new Journey(new PersonGoal(house, PersonGoal.Reason.RETURN_HOME), route.get())
-				);
-			}
-		}
-		return Optional.empty();
+	@Override
+	public Optional<JourneyPlanner.Journey<PersonGoal, PersonRoute>> planInitialJourney(
+		Point start,
+		List<House> houses
+	) {
+		return complete(beginInitialJourneyPlanning(start, houses));
 	}
 
-	Optional<Journey> planNextHouseJourney(Person person, List<House> houses) {
+	@Override
+	public JourneyPlanningTask<
+		Optional<JourneyPlanner.Journey<PersonGoal, PersonRoute>>
+	> beginInitialJourneyPlanning(Point start, List<House> houses) {
+		List<House> nearestFirst = new ArrayList<>(houses);
+		nearestFirst.sort(Comparator.comparingDouble(house -> house.getPosition().distance(start)));
+		return new HouseJourneyTask(new Point(start), nearestFirst, PersonGoal.Reason.RETURN_HOME);
+	}
+
+	@Override
+	public Optional<JourneyPlanner.Journey<PersonGoal, PersonRoute>> planNextJourney(
+		Point start,
+		House currentDestination,
+		List<House> houses
+	) {
+		return complete(beginNextJourneyPlanning(start, currentDestination, houses));
+	}
+
+	@Override
+	public JourneyPlanningTask<
+		Optional<JourneyPlanner.Journey<PersonGoal, PersonRoute>>
+	> beginNextJourneyPlanning(Point start, House currentDestination, List<House> houses) {
 		List<House> candidates = new ArrayList<>();
 		for (House house : houses) {
-			if (house != person.getCurrentHouse()) {
+			if (house != currentDestination) {
 				candidates.add(house);
 			}
 		}
-		java.util.Collections.shuffle(candidates, random);
-		for (House house : candidates) {
-			Optional<List<Point>> route = planRoute(person.getPosition(), house.getPosition());
-			if (route.isPresent()) {
-				return Optional.of(
-					new Journey(new PersonGoal(house, PersonGoal.Reason.LEISURE_VISIT), route.get())
-				);
-			}
-		}
-		return Optional.empty();
+		Collections.shuffle(candidates, random);
+		return new HouseJourneyTask(new Point(start), candidates, PersonGoal.Reason.LEISURE_VISIT);
 	}
 
-	Optional<List<Point>> planTemporaryDetour(Point start, Point detour, PersonGoal finalGoal) {
-		Point destination = finalGoal.destination();
-		Optional<List<Point>> directRoute = findRoute(start, destination);
-		Optional<List<Point>> routeToDetour = findRoute(start, detour);
-		Optional<List<Point>> routeFromDetour = findRoute(detour, destination);
-		if (directRoute.isEmpty() || routeToDetour.isEmpty() || routeFromDetour.isEmpty()) {
-			return Optional.empty();
-		}
-
-		List<Point> detourRoute = combineRoutes(routeToDetour.get(), routeFromDetour.get());
-		double directLength = routeLength(start, directRoute.get());
-		double detourLength = routeLength(start, detourRoute);
-		if (detourLength <= directLength || detourLength > directLength * MAX_DETOUR_RATIO) {
-			return Optional.empty();
-		}
-		return Optional.of(detourRoute);
+	@Override
+	public Optional<PersonRoute> planDetour(Point start, Point detour, PersonGoal finalGoal) {
+		return complete(beginDetourPlanning(start, detour, finalGoal));
 	}
 
-	double nextIdleDuration() {
+	@Override
+	public JourneyPlanningTask<Optional<PersonRoute>> beginDetourPlanning(
+		Point start,
+		Point detour,
+		PersonGoal finalGoal
+	) {
+		return new DetourPlanningTask(new Point(start), new Point(detour), finalGoal);
+	}
+
+	@Override
+	public boolean isWalkablePosition(Point position) {
+		return pathPlanner.isWalkablePosition(position);
+	}
+
+	@Override
+	public double nextIdleDurationSeconds() {
 		return MIN_IDLE_SECONDS + random.nextDouble() * IDLE_VARIATION_SECONDS;
 	}
 
-	private Optional<List<Point>> planRoute(Point start, Point destination) {
-		Optional<List<Point>> directRoute = findRoute(start, destination);
-		if (directRoute.isEmpty() || directRoute.get().isEmpty()) {
-			return directRoute;
-		}
-		if (random.nextDouble() >= NON_OPTIMAL_ROUTE_CHANCE) {
-			return directRoute;
-		}
-		return findBoundedRandomDetour(start, destination, directRoute.get()).or(() -> directRoute);
+	private static PersonRoute combineRoutes(PersonRoute first, PersonRoute second) {
+		List<PersonRoute.Segment> combined = new ArrayList<>(first.segments());
+		combined.addAll(second.segments());
+		return new PersonRoute(combined);
 	}
 
-	private Optional<List<Point>> findBoundedRandomDetour(
-		Point start,
-		Point destination,
-		List<Point> directRoute
-	) {
-		if (directRoute.size() < 3) {
-			return Optional.empty();
+	private static <Result> Result complete(JourneyPlanningTask<Result> task) {
+		while (!task.isComplete()) {
+			task.advance(Integer.MAX_VALUE);
 		}
-		double directLength = routeLength(start, directRoute);
-		for (int attempt = 0; attempt < DETOUR_ATTEMPTS; attempt++) {
-			int detourIndex = 1 + random.nextInt(directRoute.size() - 2);
-			Point anchor = directRoute.get(detourIndex);
-			int anchorColumn = Math.floorDiv(anchor.x - TerrainMap.ORIGIN_X, TerrainMap.CELL_SIZE);
-			int anchorRow = Math.floorDiv(anchor.y - TerrainMap.ORIGIN_Y, TerrainMap.CELL_SIZE);
-			int column = anchorColumn + random.nextInt(5) - 2;
-			int row = anchorRow + random.nextInt(5) - 2;
-			if (column < 0 || column >= TerrainMap.COLUMNS || row < 0 || row >= TerrainMap.ROWS) {
-				continue;
-			}
-			if (!terrain.isLandCell(column, row)) {
-				continue;
-			}
-			Point waypoint = new Point(
-				TerrainMap.gridX(column) + TerrainMap.CELL_SIZE / 2,
-				TerrainMap.gridY(row) + TerrainMap.CELL_SIZE / 2
-			);
-			if (
-				waypoint.equals(anchor) ||
-				waypoint.distance(start) < MIN_DETOUR_DISTANCE ||
-				waypoint.distance(destination) < MIN_DETOUR_DISTANCE
-			) {
-				continue;
-			}
-			Point previous = directRoute.get(detourIndex - 1);
-			Point next = directRoute.get(detourIndex + 1);
-			if (
-				!terrain.containsSegment(previous, waypoint) ||
-				!terrain.containsSegment(waypoint, next)
-			) {
-				continue;
-			}
-
-			List<Point> detourRoute = new ArrayList<>(directRoute.size() + 1);
-			for (int index = 0; index < detourIndex; index++) {
-				detourRoute.add(directRoute.get(index));
-			}
-			detourRoute.add(waypoint);
-			for (int index = detourIndex + 1; index < directRoute.size(); index++) {
-				detourRoute.add(directRoute.get(index));
-			}
-			double detourLength = routeLength(start, detourRoute);
-			if (detourLength > directLength && detourLength <= directLength * MAX_DETOUR_RATIO) {
-				return Optional.of(List.copyOf(detourRoute));
-			}
-		}
-		return Optional.empty();
+		return task.result();
 	}
 
-	private Optional<List<Point>> findRoute(Point start, Point destination) {
-		if (start.equals(destination)) {
-			return Optional.of(List.of());
-		}
-		List<Point> route = pathfinder.findPath(start, destination, random);
-		return route.isEmpty() ? Optional.empty() : Optional.of(route);
-	}
+	private final class HouseJourneyTask
+		implements JourneyPlanningTask<Optional<JourneyPlanner.Journey<PersonGoal, PersonRoute>>>
+	{
 
-	private static List<Point> combineRoutes(List<Point> first, List<Point> second) {
-		List<Point> combined = new ArrayList<>(first);
-		for (Point point : second) {
-			if (combined.isEmpty() || !combined.getLast().equals(point)) {
-				combined.add(new Point(point));
+		private final Point start;
+		private final List<House> candidates;
+		private final PersonGoal.Reason reason;
+		private int candidateIndex;
+		private PersonPathPlanner.SearchSession search;
+		private Optional<JourneyPlanner.Journey<PersonGoal, PersonRoute>> result = Optional.empty();
+		private boolean complete;
+
+		private HouseJourneyTask(Point start, List<House> candidates, PersonGoal.Reason reason) {
+			this.start = start;
+			this.candidates = List.copyOf(candidates);
+			this.reason = reason;
+		}
+
+		@Override
+		public int advance(int workBudget) {
+			if (complete || workBudget <= 0) {
+				return 0;
 			}
+			int workDone = 0;
+			while (!complete && workDone < workBudget) {
+				if (candidateIndex >= candidates.size()) {
+					complete = true;
+					break;
+				}
+				if (search == null) {
+					search = pathPlanner.beginFastestRoute(start, candidates.get(candidateIndex));
+				}
+				int usedWork = search.advance(workBudget - workDone);
+				workDone += Math.max(1, usedWork);
+				if (!search.isComplete()) {
+					break;
+				}
+				Optional<PersonRoute> route = search.result();
+				search = null;
+				if (route.isPresent()) {
+					House destination = candidates.get(candidateIndex);
+					result = Optional.of(
+						new JourneyPlanner.Journey<>(
+							new PersonGoal(destination, reason),
+							route.get()
+						)
+					);
+					complete = true;
+				} else {
+					candidateIndex++;
+				}
+			}
+			return workDone;
 		}
-		return List.copyOf(combined);
+
+		@Override
+		public boolean isComplete() {
+			return complete;
+		}
+
+		@Override
+		public Optional<JourneyPlanner.Journey<PersonGoal, PersonRoute>> result() {
+			if (!complete) {
+				throw new IllegalStateException("Journey planning is not complete");
+			}
+			return result;
+		}
 	}
 
-	private static double routeLength(Point start, List<Point> route) {
-		Point previous = start;
-		double length = 0.0;
-		for (Point waypoint : route) {
-			length += previous.distance(waypoint);
-			previous = waypoint;
-		}
-		return length;
-	}
+	private final class DetourPlanningTask implements JourneyPlanningTask<Optional<PersonRoute>> {
 
-	record Journey(PersonGoal goal, List<Point> waypoints) {
-		Journey {
-			waypoints = waypoints.stream().map(Point::new).toList();
+		private final Point start;
+		private final Point detour;
+		private final PersonGoal finalGoal;
+		private int phase;
+		private PersonPathPlanner.SearchSession search;
+		private PersonRoute directRoute;
+		private PersonRoute routeToDetour;
+		private PersonRoute routeFromDetour;
+		private Optional<PersonRoute> result = Optional.empty();
+		private boolean complete;
+
+		private DetourPlanningTask(Point start, Point detour, PersonGoal finalGoal) {
+			this.start = start;
+			this.detour = detour;
+			this.finalGoal = finalGoal;
+		}
+
+		@Override
+		public int advance(int workBudget) {
+			if (complete || workBudget <= 0) {
+				return 0;
+			}
+			int workDone = 0;
+			while (!complete && workDone < workBudget) {
+				if (search == null) {
+					search = switch (phase) {
+						case 0 -> pathPlanner.beginFastestRoute(
+							start,
+							finalGoal.destinationHouse()
+						);
+						case 1 -> pathPlanner.beginFastestRouteToPoint(start, detour);
+						case 2 -> pathPlanner.beginFastestRoute(
+							detour,
+							finalGoal.destinationHouse()
+						);
+						default -> null;
+					};
+					if (search == null) {
+						completeDetour();
+						break;
+					}
+				}
+				int usedWork = search.advance(workBudget - workDone);
+				workDone += Math.max(1, usedWork);
+				if (!search.isComplete()) {
+					break;
+				}
+				Optional<PersonRoute> route = search.result();
+				search = null;
+				if (route.isEmpty()) {
+					complete = true;
+					break;
+				}
+				switch (phase++) {
+					case 0 -> directRoute = route.get();
+					case 1 -> routeToDetour = route.get();
+					case 2 -> routeFromDetour = route.get();
+					default -> throw new IllegalStateException("Unexpected detour search phase");
+				}
+				if (phase == 3) {
+					completeDetour();
+				}
+			}
+			return workDone;
+		}
+
+		private void completeDetour() {
+			if (directRoute != null && routeToDetour != null && routeFromDetour != null) {
+				PersonRoute detourRoute = combineRoutes(routeToDetour, routeFromDetour);
+				double directTime = directRoute.travelTimeSeconds(
+					Person.WALK_SPEED_PIXELS_PER_SECOND
+				);
+				double detourTime = detourRoute.travelTimeSeconds(
+					Person.WALK_SPEED_PIXELS_PER_SECOND
+				);
+				if (detourTime > directTime && detourTime <= directTime * MAX_DETOUR_RATIO) {
+					result = Optional.of(detourRoute);
+				}
+			}
+			complete = true;
+		}
+
+		@Override
+		public boolean isComplete() {
+			return complete;
+		}
+
+		@Override
+		public Optional<PersonRoute> result() {
+			if (!complete) {
+				throw new IllegalStateException("Detour planning is not complete");
+			}
+			return result;
 		}
 	}
 }

@@ -126,10 +126,6 @@ public final class WorldMap {
 		return true;
 	}
 
-	public void update(double deltaSeconds) {
-		resourceBuildingManager.update(deltaSeconds, fixedEntityManager.getStations());
-	}
-
 	public void update(SimulationTick tick) {
 		resourceBuildingManager.update(tick, fixedEntityManager.getStations());
 	}

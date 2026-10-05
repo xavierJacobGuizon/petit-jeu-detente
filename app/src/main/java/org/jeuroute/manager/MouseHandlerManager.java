@@ -84,11 +84,13 @@ public class MouseHandlerManager {
 		if (!mouseHandler.isDragging() || mouseHandler.getDragStart() == null) {
 			return List.of();
 		}
+
 		Point start = graph.snapRoutePoint(mouseHandler.getDragStart());
 		Point end = graph.snapRoutePoint(mouseHandler.getCurrentDragEnd());
 		if (!canPlaceRoute(start, end)) {
 			return List.of();
 		}
+
 		return graph.getIntersectionsAfterAddingRoad(start, end);
 	}
 

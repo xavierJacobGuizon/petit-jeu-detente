@@ -2,15 +2,15 @@ package org.jeuroute.gamecore;
 
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
-import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
+import java.util.function.LongConsumer;
 
 public class GameLoop {
 
 	public void start(
 		BooleanSupplier shouldClose,
 		Runnable pollEvents,
-		DoubleConsumer update,
+		LongConsumer update,
 		Runnable render
 	) {
 		start(shouldClose, pollEvents, update, render, ignored -> {});
@@ -19,7 +19,7 @@ public class GameLoop {
 	public void start(
 		BooleanSupplier shouldClose,
 		Runnable pollEvents,
-		DoubleConsumer update,
+		LongConsumer update,
 		Runnable render,
 		IntConsumer framesPerSecondUpdated
 	) {
@@ -35,10 +35,10 @@ public class GameLoop {
 			}
 
 			long nowNs = System.nanoTime();
-			double deltaSeconds = (nowNs - previousFrameNs) / 1_000_000_000.0;
+			long elapsedNanoseconds = nowNs - previousFrameNs;
 			previousFrameNs = nowNs;
 
-			update.accept(deltaSeconds);
+			update.accept(elapsedNanoseconds);
 			render.run();
 			frameRateCounter
 				.recordCompletedFrame(System.nanoTime())

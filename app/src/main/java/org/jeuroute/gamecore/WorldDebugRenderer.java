@@ -5,6 +5,7 @@ import static org.lwjgl.opengl.GL11.*;
 import java.awt.Point;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Set;
 import org.jeuroute.gamecore.camera.WorldViewBounds;
 import org.jeuroute.model.records.world.WorldRenderData;
@@ -38,6 +39,17 @@ public final class WorldDebugRenderer {
 		double zoom,
 		WorldViewBounds viewBounds
 	) {
+		List<DebugRouteLineMerger.Line> routeLines =
+			new PersonRouteGeometryCache().collectVisibleLines(world.people(), viewBounds);
+		renderDestinations(world, zoom, viewBounds, routeLines);
+	}
+
+	public static void renderDestinations(
+		WorldRenderData world,
+		double zoom,
+		WorldViewBounds viewBounds,
+		List<DebugRouteLineMerger.Line> routeLines
+	) {
 		int circleSegments = circleSegmentsForZoom(zoom);
 		glLineWidth((float) Math.max(1.0, 1.5 * zoom));
 		glColor3f(0.95f, 0.72f, 0.2f);
@@ -69,31 +81,31 @@ public final class WorldDebugRenderer {
 				continue;
 			}
 			House destinationHouse = person.getDestinationHouse();
+			if (destinationHouse == null) {
+				continue;
+			}
+
 			if (
-				destinationHouse != null &&
-				viewBounds.intersectsSegment(
-					person.getPreciseX(),
-					person.getPreciseY(),
+				viewBounds.contains(
 					destinationHouse.getPositionX(),
 					destinationHouse.getPositionY(),
+					DESTINATION_RADIUS
+				)
+			) {
+				destinationHouses.add(destinationHouse);
+			}
+		}
+		for (DebugRouteLineMerger.Line line : routeLines) {
+			if (
+				viewBounds.intersectsSegment(
+					line.startX(),
+					line.startY(),
+					line.endX(),
+					line.endY(),
 					0.75
 				)
 			) {
-				drawDestinationLine(
-					person.getPreciseX(),
-					person.getPreciseY(),
-					destinationHouse.getPositionX(),
-					destinationHouse.getPositionY()
-				);
-				if (
-					viewBounds.contains(
-						destinationHouse.getPositionX(),
-						destinationHouse.getPositionY(),
-						DESTINATION_RADIUS
-					)
-				) {
-					destinationHouses.add(destinationHouse);
-				}
+				drawDestinationLine(line.startX(), line.startY(), line.endX(), line.endY());
 			}
 		}
 		glEnd();

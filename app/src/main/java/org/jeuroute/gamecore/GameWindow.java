@@ -6,6 +6,7 @@ import static org.lwjgl.system.MemoryUtil.*;
 
 import java.nio.IntBuffer;
 import java.util.Objects;
+import org.jeuroute.gamecore.controllers.GameInputController;
 import org.lwjgl.system.MemoryStack;
 
 public class GameWindow {

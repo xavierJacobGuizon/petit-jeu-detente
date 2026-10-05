@@ -9,21 +9,29 @@ import org.jeuroute.model.world.skin.PersonSkin;
 public final class Person {
 
 	public static final double WALK_SPEED_PIXELS_PER_SECOND = 28.0;
+	public static final int COLLISION_RADIUS = 4;
 
 	private final PersonSkin skin = new PersonSkin();
-	private final House homeHouse;
+	private House homeHouse;
 	private double x;
 	private double y;
 	private House currentHouse;
 	private PersonGoal currentGoal;
-	private List<Point> waypoints = List.of();
-	private int nextWaypointIndex;
+	private PersonRoute route = new PersonRoute(List.of());
+	private int nextSegmentIndex;
+	private long routeGeometryVersion;
+	private long routePlanVersion;
+	private PersonMovementState movementState;
 	private long idleTicksRemaining;
 	private boolean temporaryDetourApplied;
 
 	public Person(Point position, House homeHouse) {
-		Objects.requireNonNull(position, "position cannot be null");
+		this(position);
 		this.homeHouse = Objects.requireNonNull(homeHouse, "homeHouse cannot be null");
+	}
+
+	public Person(Point position) {
+		Objects.requireNonNull(position, "position cannot be null");
 		x = position.x;
 		y = position.y;
 	}
@@ -60,17 +68,71 @@ public final class Person {
 		return currentGoal != null;
 	}
 
+	public boolean isAwaitingInitialJourney() {
+		return homeHouse == null;
+	}
+
+	public PersonMovementState getMovementState() {
+		return movementState;
+	}
+
+	public List<PersonRoute.Segment> getRemainingRouteSegments() {
+		return route.segments().subList(nextSegmentIndex, route.segments().size());
+	}
+
+	public long getRouteGeometryVersion() {
+		return routeGeometryVersion;
+	}
+
+	public long getRoutePlanVersion() {
+		return routePlanVersion;
+	}
+
+	public int getCurrentSegmentIndex() {
+		return nextSegmentIndex;
+	}
+
 	public double getIdleSecondsRemaining() {
 		return idleTicksRemaining * SimulationTick.STEP_SECONDS;
 	}
 
+	public long getIdleTicksRemaining() {
+		return idleTicksRemaining;
+	}
+
+	public void finishIdlePeriod() {
+		idleTicksRemaining = 0;
+	}
+
 	public boolean beginJourney(PersonGoal goal, List<Point> route) {
+		return beginJourney(
+			Objects.requireNonNull(goal),
+			PersonRoute.walking(getPosition(), route)
+		);
+	}
+
+	public boolean beginJourney(PersonGoal goal, PersonRoute route) {
 		currentGoal = Objects.requireNonNull(goal, "goal cannot be null");
-		waypoints = route.stream().map(Point::new).toList();
-		nextWaypointIndex = 0;
+		this.route = Objects.requireNonNull(route, "route cannot be null");
+		nextSegmentIndex = 0;
+		routeGeometryVersion++;
+		routePlanVersion++;
 		idleTicksRemaining = 0;
 		temporaryDetourApplied = false;
-		return waypoints.isEmpty() && arriveAtDestination();
+		if (route.isEmpty()) {
+			return arriveAtDestination();
+		}
+		prepareMovementState();
+		return false;
+	}
+
+	public boolean beginInitialJourney(PersonGoal goal, PersonRoute route) {
+		if (!isAwaitingInitialJourney()) {
+			return false;
+		}
+		PersonGoal initialGoal = Objects.requireNonNull(goal, "goal cannot be null");
+		homeHouse = initialGoal.destinationHouse();
+		return beginJourney(initialGoal, route);
 	}
 
 	public boolean canAcceptTemporaryDetour() {
@@ -78,49 +140,54 @@ public final class Person {
 	}
 
 	public boolean replaceRoute(List<Point> route) {
+		return replaceRoute(PersonRoute.walking(getPosition(), route));
+	}
+
+	public boolean replaceRoute(PersonRoute route) {
 		if (!canAcceptTemporaryDetour() || route.isEmpty()) {
 			return false;
 		}
-		waypoints = route.stream().map(Point::new).toList();
-		nextWaypointIndex = 0;
+		this.route = Objects.requireNonNull(route);
+		nextSegmentIndex = 0;
+		routeGeometryVersion++;
+		routePlanVersion++;
 		temporaryDetourApplied = true;
+		prepareMovementState();
 		return true;
 	}
 
-	public boolean advanceMovement(double deltaSeconds) {
-		if (!isWalking() || deltaSeconds <= 0.0) {
-			return false;
-		}
-
-		double remainingDistance = WALK_SPEED_PIXELS_PER_SECOND * deltaSeconds;
-		while (nextWaypointIndex < waypoints.size()) {
-			Point waypoint = waypoints.get(nextWaypointIndex);
-			double deltaX = waypoint.x - x;
-			double deltaY = waypoint.y - y;
-			double distance = Math.hypot(deltaX, deltaY);
-			if (distance <= remainingDistance || distance == 0.0) {
-				x = waypoint.x;
-				y = waypoint.y;
-				remainingDistance -= distance;
-				nextWaypointIndex++;
-				continue;
-			}
-
-			double ratio = remainingDistance / distance;
-			x += deltaX * ratio;
-			y += deltaY * ratio;
-			return false;
-		}
-
-		return arriveAtDestination();
-	}
-
 	public boolean advanceMovement(SimulationTick tick) {
-		return advanceMovement(Objects.requireNonNull(tick).deltaSeconds());
+		return PersonMovementSystem.advancePerson(this, Objects.requireNonNull(tick));
 	}
 
-	public boolean advanceIdle(double deltaSeconds) {
-		return advanceIdleTicks(SimulationTick.ticksForSeconds(Math.max(0.0, deltaSeconds)));
+	PersonMovementState movementState() {
+		return movementState;
+	}
+
+	void setMovementPosition(double nextX, double nextY) {
+		x = nextX;
+		y = nextY;
+	}
+
+	boolean completeMovementSegment() {
+		PersonMovementState completedState = movementState;
+		setMovementPosition(completedState.x(), completedState.y());
+		movementState = null;
+		nextSegmentIndex++;
+		routeGeometryVersion++;
+		if (nextSegmentIndex >= route.segments().size()) {
+			return arriveAtDestination();
+		}
+		prepareMovementState();
+		return false;
+	}
+
+	void prepareMovementState() {
+		if (nextSegmentIndex >= route.segments().size()) {
+			movementState = null;
+			return;
+		}
+		movementState = new PersonMovementState(x, y, route.segments().get(nextSegmentIndex));
 	}
 
 	public boolean advanceIdle(SimulationTick tick) {
@@ -148,13 +215,13 @@ public final class Person {
 	}
 
 	private boolean arriveAtDestination() {
-		Point destination = currentGoal.destination();
-		x = destination.x;
-		y = destination.y;
 		currentHouse = currentGoal.destinationHouse();
 		currentGoal = null;
-		waypoints = List.of();
-		nextWaypointIndex = 0;
+		route = new PersonRoute(List.of());
+		nextSegmentIndex = 0;
+		routeGeometryVersion++;
+		routePlanVersion++;
+		movementState = null;
 		return true;
 	}
 }

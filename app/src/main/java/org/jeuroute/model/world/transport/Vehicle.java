@@ -247,25 +247,6 @@ public class Vehicle {
 		clearResourceTransfer();
 	}
 
-	/**
-	 * Met à jour la position du véhicule en fonction du temps écoulé depuis la dernière mise à jour.
-	 * @param deltaSeconds Le temps écoulé en secondes depuis la dernière mise à jour.
-	 */
-	public void update(double deltaSeconds) {
-		if (!Double.isFinite(deltaSeconds)) {
-			throw new IllegalArgumentException("Elapsed time must be finite");
-		}
-		synchronizeGraphVersion();
-		if (deltaSeconds <= 0.0) {
-			updateMovement(0.0);
-			return;
-		}
-		long elapsedTicks = SimulationTick.ticksForSeconds(deltaSeconds);
-		for (long elapsedTick = 0; elapsedTick < elapsedTicks; elapsedTick++) {
-			updateMovement(SimulationTick.STEP_SECONDS);
-		}
-	}
-
 	public void update(SimulationTick tick) {
 		synchronizeGraphVersion();
 		updateMovement(tick.deltaSeconds());

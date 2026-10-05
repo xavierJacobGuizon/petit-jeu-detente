@@ -1,10 +1,13 @@
-package org.jeuroute.manager;
+package org.jeuroute.gamecore.controllers;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 import org.jeuroute.gamecore.hud.Hud;
 import org.jeuroute.gamecore.hud.elements.HudButton;
+import org.jeuroute.manager.GameManager;
+import org.jeuroute.manager.LineManager;
+import org.jeuroute.manager.VehicleManager;
 import org.jeuroute.model.world.enums.LineColor;
 import org.jeuroute.model.world.transport.TransitLine;
 import org.jeuroute.model.world.transport.Vehicle;
@@ -38,7 +41,9 @@ final class LineVehicleDialogController {
 	void openLineManagementDialog() {
 		List<TransitLine> lines = lineManager.getLines();
 		if (lines.isEmpty()) {
-			hud().showDialog("AUCUNE LIGNE", List.of(new HudButton("FERMER", () -> {})));
+			List<HudButton> options = new ArrayList<>();
+			options.add(new HudButton("FERMER", () -> {}));
+			hud().showDialog("AUCUNE LIGNE", options);
 			return;
 		}
 
@@ -116,7 +121,9 @@ final class LineVehicleDialogController {
 
 	void openVehicleListDialog() {
 		if (vehicleManager.getVehicles().isEmpty()) {
-			hud().showDialog("AUCUN VEHICULE", List.of(new HudButton("FERMER", () -> {})));
+			List<HudButton> options = new ArrayList<>();
+			options.add(new HudButton("FERMER", () -> {}));
+			hud().showDialog("AUCUN VEHICULE", options);
 			return;
 		}
 
@@ -146,10 +153,9 @@ final class LineVehicleDialogController {
 			List.of(
 				new HudButton("RETIRER DE LA LIGNE", () -> {
 					vehicle.unassignLine();
-					hud().showDialog(
-						"VEHICULE " + vehicleNumber + " LIBRE",
-						List.of(new HudButton("FERMER", () -> {}))
-					);
+					List<HudButton> options = new ArrayList<>();
+					options.add(new HudButton("FERMER", () -> {}));
+					hud().showDialog("VEHICULE " + vehicleNumber + " LIBRE", options);
 				}),
 				new HudButton("ANNULER", () -> {})
 			)

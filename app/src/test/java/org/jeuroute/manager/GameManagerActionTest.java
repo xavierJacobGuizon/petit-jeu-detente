@@ -7,10 +7,14 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Point;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import org.jeuroute.gamecore.MouseHandler;
 import org.jeuroute.gamecore.hud.Hud;
+import org.jeuroute.gamecore.hud.presentation.DebugProfilerWindowContent;
 import org.jeuroute.gamecore.hud.presentation.HudLayout;
+import org.jeuroute.model.records.hud.HudBounds;
 import org.junit.jupiter.api.Test;
 
 class GameManagerActionTest {
@@ -62,10 +66,14 @@ class GameManagerActionTest {
 
 		Point dropPosition = new Point(650, 375);
 		mouseHandler.onPersonPlacement(dropPosition.x, dropPosition.y);
-		gameManager.update(0.0);
+		gameManager.advanceFrame(0L);
 
 		assertEquals(initialPersonCount + 1, gameManager.getPersonManager().getPeople().size());
 		var addedPerson = gameManager.getPersonManager().getPeople().getLast();
+		for (int tick = 0; tick < 10_000 && addedPerson.isAwaitingInitialJourney(); tick++) {
+			gameManager.advanceFrame(16_666_667L);
+		}
+		assertFalse(addedPerson.isAwaitingInitialJourney());
 		assertNotNull(addedPerson.getDestinationHouse());
 		assertTrue(gameManager.getWorldMap().getTerrainMap().isLand(addedPerson.getPosition()));
 		assertEquals(
@@ -100,13 +108,62 @@ class GameManagerActionTest {
 	}
 
 	@Test
+	void personRouteDisplayToggleIsIndependentFromDebugMode() {
+		GameManager gameManager = new GameManager(new Random(42));
+
+		gameManager.getActionHandlers().get("toggle-person-routes").run();
+
+		assertTrue(gameManager.isPersonRouteDisplayEnabled());
+		assertFalse(gameManager.isDebugModeEnabled());
+
+		gameManager.getActionHandlers().get("toggle-debug").run();
+
+		assertTrue(gameManager.isDebugModeEnabled());
+		assertTrue(gameManager.isPersonRouteDisplayEnabled());
+	}
+
+	@Test
+	void debugWindowButtonsToggleMouseAndPersonRoutesIndependently() {
+		boolean[] debugEnabled = { false };
+		boolean[] personRoutesEnabled = { false };
+		DebugProfilerWindowContent content = new DebugProfilerWindowContent(
+			new org.jeuroute.gamecore.PerformanceProfiler(),
+			() -> new Point(0, 0),
+			() -> debugEnabled[0],
+			() -> debugEnabled[0] = !debugEnabled[0],
+			() -> personRoutesEnabled[0],
+			() -> personRoutesEnabled[0] = !personRoutesEnabled[0]
+		);
+		HudBounds contentBounds = new HudBounds(20, 30, 600, 200);
+
+		assertTrue(content.handleClick(contentBounds, 30, 40));
+		assertTrue(debugEnabled[0]);
+		assertFalse(personRoutesEnabled[0]);
+
+		assertTrue(content.handleClick(contentBounds, 190, 40));
+		assertTrue(debugEnabled[0]);
+		assertTrue(personRoutesEnabled[0]);
+	}
+
+	@Test
+	void performanceSampleHandlerReceivesEachCompletedSimulationTick() {
+		GameManager gameManager = new GameManager(new Random(42));
+		List<Long> sampledTicks = new ArrayList<>();
+		gameManager.setPerformanceSampleHandler(sampledTicks::add);
+
+		gameManager.advanceFrame(50_000_000L);
+
+		assertEquals(List.of(1L, 2L, 3L), sampledTicks);
+	}
+
+	@Test
 	void simulationTickCountIsIndependentOfFrameTimeSlicing() {
 		GameManager singleFrameGame = new GameManager(new Random(42));
 		GameManager slicedFrameGame = new GameManager(new Random(42));
 
-		singleFrameGame.update(1.0);
+		singleFrameGame.advanceFrame(1_000_000_000L);
 		for (int frame = 0; frame < 8; frame++) {
-			slicedFrameGame.update(0.125);
+			slicedFrameGame.advanceFrame(125_000_000L);
 		}
 
 		assertEquals(60, singleFrameGame.getCurrentTickNumber());

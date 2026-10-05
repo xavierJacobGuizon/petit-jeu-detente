@@ -104,19 +104,6 @@ public final class ResourceBuildingManager {
 		}
 	}
 
-	public void update(double deltaSeconds, List<Station> stations) {
-		for (ResourceBuilding building : buildings) {
-			building.update(deltaSeconds);
-		}
-		for (Station station : stations) {
-			List<ResourceBuilding> capturedBuildings = buildings
-				.stream()
-				.filter(station::canAccess)
-				.toList();
-			station.synchronizeCapturedBuildings(capturedBuildings);
-		}
-	}
-
 	public void update(SimulationTick tick, List<Station> stations) {
 		Objects.requireNonNull(tick);
 		for (ResourceBuilding building : buildings) {

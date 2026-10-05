@@ -40,24 +40,46 @@ import org.jeuroute.model.world.transport.Depot;
 import org.jeuroute.model.world.transport.Station;
 import org.jeuroute.model.world.transport.TransitLine;
 import org.jeuroute.model.world.transport.Vehicle;
+import org.jeuroute.testing.SimulationTestClock;
 import org.junit.jupiter.api.Test;
 
 class AppTest {
 
+	private final SimulationTestClock simulationClock = new SimulationTestClock();
+
+	private void updateVehicles(double elapsedSeconds, Vehicle... vehicles) {
+		simulationClock.advanceSeconds(elapsedSeconds, tick -> {
+			for (Vehicle vehicle : vehicles) {
+				vehicle.update(tick);
+			}
+		});
+	}
+
+	private void stepVehicles(Vehicle... vehicles) {
+		simulationClock.step(tick -> {
+			for (Vehicle vehicle : vehicles) {
+				vehicle.update(tick);
+			}
+		});
+	}
+
 	private final RoadGraph graph = new RoadGraph();
 
 	@Test
-	void gameLoopShouldSupplyDeltaInSeconds() {
+	void gameLoopShouldSupplyElapsedNanoseconds() {
 		GameLoop loop = new GameLoop();
 		AtomicBoolean rendered = new AtomicBoolean();
-		AtomicReference<Double> deltaSeconds = new AtomicReference<>();
+		AtomicReference<Long> elapsedNanoseconds = new AtomicReference<>();
 
-		loop.start(rendered::get, () -> LockSupport.parkNanos(20_000_000L), deltaSeconds::set, () ->
-			rendered.set(true)
+		loop.start(
+			rendered::get,
+			() -> LockSupport.parkNanos(20_000_000L),
+			elapsedNanoseconds::set,
+			() -> rendered.set(true)
 		);
 
-		assertTrue(deltaSeconds.get() >= 0.005);
-		assertTrue(deltaSeconds.get() < 1.0);
+		assertTrue(elapsedNanoseconds.get() >= 5_000_000L);
+		assertTrue(elapsedNanoseconds.get() < 1_000_000_000L);
 	}
 
 	@Test
@@ -358,7 +380,7 @@ class AppTest {
 				.anyMatch(vehicle -> !vehicle.isParkedAtDepot());
 			frame++
 		) {
-			game.update(1.0);
+			game.advanceFrame(1_000_000_000L);
 		}
 
 		for (Vehicle vehicle : game.getVehicleManager().getVehicles()) {
@@ -374,7 +396,7 @@ class AppTest {
 		roadGraph.createRoad(new Point(200, 200), new Point(400, 200));
 		roadGraph.createRoad(new Point(300, 100), new Point(300, 300));
 		roadGraph.createRoad(new Point(500, 200), new Point(600, 200));
-		game.update(0.0);
+		game.advanceFrame(0L);
 		MouseHandler mouseHandler = game.getMouseHandlerManager().getMouseHandler();
 		mouseHandler.setRouteCreationEnabled(true);
 
@@ -389,7 +411,7 @@ class AppTest {
 		mouseHandler.onMove(308, 201);
 		assertEquals(new Point(300, 200), game.getMouseHandlerManager().getRouteSnapPoint());
 		mouseHandler.onRelease(0, 308, 201);
-		game.update(0.0);
+		game.advanceFrame(0L);
 		assertTrue(roadGraph.findPath(new Point(225, 250), new Point(300, 200)).isPresent());
 
 		assertEquals(new Point(300, 200), game.getMouseHandlerManager().getRouteSnapPoint());
@@ -445,7 +467,7 @@ class AppTest {
 		assertTrue(preview.valid());
 
 		mouseHandler.onDepotPlacement(100, 100);
-		game.update(0.0);
+		game.advanceFrame(0L);
 
 		assertEquals(2, game.getDepots().size());
 		var placedDepot = game.getDepots().getLast();
@@ -478,7 +500,7 @@ class AppTest {
 				placedDepot.getAccessPosition(),
 				accessRoad.getEnd()
 			);
-		vehicle.update(0.1);
+		updateVehicles(0.1, vehicle);
 		assertEquals(placedDepot.getAccessPosition(), vehicle.getPosition());
 		assertTrue(vehicle.isParkedAtDepot());
 	}
@@ -489,7 +511,7 @@ class AppTest {
 		game.getMouseHandlerManager().getMouseHandler().setStationCreationEnabled(true);
 		game.getMouseHandlerManager().getMouseHandler().onStationPlacement(401, 299);
 
-		game.update(0.0);
+		game.advanceFrame(0L);
 
 		assertEquals(1, game.getStations().size());
 		assertEquals(new Point(400, 300), game.getStations().get(0).getPosition());
@@ -675,14 +697,14 @@ class AppTest {
 		game.getRoadGraph().createRoad(startStation.getPosition(), middleStation.getPosition());
 		game.getRoadGraph().addStationNode(startStation.getPosition());
 		game.getRoadGraph().addStationNode(middleStation.getPosition());
-		game.update(0.0);
+		game.advanceFrame(0L);
 
 		MouseHandler mouseHandler = game.getMouseHandlerManager().getMouseHandler();
 		mouseHandler.setLineCreationEnabled(true);
 		mouseHandler.onLineStationSelection(100, 100);
-		game.update(0.0);
+		game.advanceFrame(0L);
 		mouseHandler.onLineStationSelection(200, 100);
-		game.update(0.0);
+		game.advanceFrame(0L);
 		mouseHandler.onMove(240, 160);
 
 		LinePreview preview = game.getLinePreview();
@@ -702,12 +724,12 @@ class AppTest {
 		game.getRoadGraph().addStationNode(start.getPosition());
 		game.getRoadGraph().addStationNode(reachable.getPosition());
 		game.getRoadGraph().addStationNode(isolated.getPosition());
-		game.update(0.0);
+		game.advanceFrame(0L);
 
 		MouseHandler mouseHandler = game.getMouseHandlerManager().getMouseHandler();
 		mouseHandler.setLineCreationEnabled(true);
 		mouseHandler.onLineStationSelection(start.getPosition().x, start.getPosition().y);
-		game.update(0.0);
+		game.advanceFrame(0L);
 
 		mouseHandler.onMove(reachable.getPosition().x, reachable.getPosition().y);
 		assertEquals(LinePreviewStatus.CONNECTABLE, game.getLinePreview().status());
@@ -755,14 +777,14 @@ class AppTest {
 		GameManager game = new GameManager(new java.util.Random(42));
 		Station station = game.getFixedEntityManager().createStation(new Point(100, 100));
 		game.getRoadGraph().addStationNode(station.getPosition());
-		game.update(0.0);
+		game.advanceFrame(0L);
 		Hud hud = game.getHud();
 		MouseHandler mouseHandler = game.getMouseHandlerManager().getMouseHandler();
 
 		assertTrue(hud.handleClick(1020, 685, 1280, 720));
 		assertTrue(hud.handleClick(1020, 639, 1280, 720));
 		mouseHandler.onLineStationSelection(100, 100);
-		game.update(0.0);
+		game.advanceFrame(0L);
 		mouseHandler.onMove(180, 140);
 		assertNotNull(game.getLinePreview());
 
@@ -780,7 +802,7 @@ class AppTest {
 		GameManager game = new GameManager(new java.util.Random(42));
 		Station station = game.getFixedEntityManager().createStation(new Point(100, 100));
 		game.getRoadGraph().addStationNode(station.getPosition());
-		game.update(0.0);
+		game.advanceFrame(0L);
 		Hud hud = game.getHud();
 		MouseHandler mouseHandler = game.getMouseHandlerManager().getMouseHandler();
 
@@ -790,7 +812,7 @@ class AppTest {
 		assertTrue(hud.handleClick(860, 685, 1280, 720));
 		assertTrue(hud.handleClick(860, 639, 1280, 720));
 
-		game.update(0.0);
+		game.advanceFrame(0L);
 
 		assertFalse(mouseHandler.isLineCreationEnabled());
 		assertTrue(mouseHandler.isRouteCreationEnabled());
@@ -820,16 +842,16 @@ class AppTest {
 			.toList();
 	}
 
-	private static void advanceVehicleUntil(Vehicle vehicle, Point target) {
+	private void advanceVehicleUntil(Vehicle vehicle, Point target) {
 		for (int frame = 0; frame < 3600 && !target.equals(vehicle.getPosition()); frame++) {
-			vehicle.update(1.0 / 60.0);
+			stepVehicles(vehicle);
 		}
 		assertEquals(target, vehicle.getPosition());
 	}
 
 	private static void advanceGameVehicleUntil(GameManager game, Vehicle vehicle, Point target) {
 		for (int frame = 0; frame < 3600 && !target.equals(vehicle.getPosition()); frame++) {
-			game.update(1.0 / 60.0);
+			game.advanceFrame(16_666_667L);
 		}
 		assertEquals(target, vehicle.getPosition());
 	}
@@ -856,7 +878,7 @@ class AppTest {
 		RoadGraph roadGraph = game.getRoadGraph();
 		roadGraph.createRoad(new Point(200, 200), new Point(400, 200));
 		roadGraph.createRoad(new Point(300, 100), new Point(300, 300));
-		game.update(0.0);
+		game.advanceFrame(0L);
 		MouseHandler mouseHandler = game.getMouseHandlerManager().getMouseHandler();
 		mouseHandler.setRouteCreationEnabled(true);
 		mouseHandler.onRoutePlacement(200, 200);
@@ -948,25 +970,25 @@ class AppTest {
 		game.getRoadGraph().addStationNode(first.getPosition());
 		game.getRoadGraph().addStationNode(reachable.getPosition());
 		game.getRoadGraph().addStationNode(unreachable.getPosition());
-		game.update(0.0);
+		game.advanceFrame(0L);
 		Hud hud = game.getHud();
 		MouseHandler mouseHandler = game.getMouseHandlerManager().getMouseHandler();
 		assertTrue(hud.handleClick(1020, 685, 1280, 720));
 		assertTrue(hud.handleClick(1020, 639, 1280, 720));
 
 		mouseHandler.onLineStationSelection(100, 100);
-		game.update(0.0);
+		game.advanceFrame(0L);
 		mouseHandler.onMove(100, 100);
 		mouseHandler.onLineStationSelection(100, 300);
 		mouseHandler.onMove(100, 300);
-		game.update(0.0);
+		game.advanceFrame(0L);
 		assertEquals("AUCUN CHEMIN VERS STATION", hud.getDialog().getTitle());
 		assertEquals(List.of(first.getPosition()), game.getLinePreview().stations());
 		assertTrue(hud.handleClick(640, 385, 1280, 720));
 
 		mouseHandler.onLineStationSelection(200, 100);
 		mouseHandler.onMove(200, 100);
-		game.update(0.0);
+		game.advanceFrame(0L);
 		assertEquals(
 			List.of(first.getPosition(), reachable.getPosition()),
 			game.getLinePreview().stations()
@@ -1013,7 +1035,7 @@ class AppTest {
 		roadGraph.addStationNode(first.getPosition());
 		roadGraph.addStationNode(middle.getPosition());
 		roadGraph.addStationNode(last.getPosition());
-		game.update(0.0);
+		game.advanceFrame(0L);
 		TransitLine line = game
 			.getLineManager()
 			.createLine(List.of(first, middle, last))
@@ -1022,7 +1044,7 @@ class AppTest {
 		assertTrue(line.getSegmentPaths().get(1).getLength() > 100.0);
 
 		roadGraph.createRoad(first.getPosition(), last.getPosition());
-		game.update(0.0);
+		game.advanceFrame(0L);
 
 		assertEquals(100.0, line.getSegmentPaths().get(0).getLength(), 0.001);
 		assertEquals(100.0, line.getSegmentPaths().get(1).getLength(), 0.001);
@@ -1050,11 +1072,11 @@ class AppTest {
 		);
 		assertTrue(lineManager.assignVehicle(vehicle, line));
 
-		vehicle.update(0.0);
+		stepVehicles(vehicle);
 		advanceVehicleUntil(vehicle, new Point(0, 200));
 
 		routeGraph.createRoad(new Point(0, 200), next.getPosition());
-		vehicle.update(0.0);
+		stepVehicles(vehicle);
 
 		assertEquals(next.getPosition(), vehicle.getTarget());
 		advanceVehicleUntil(vehicle, next.getPosition());
@@ -1091,9 +1113,9 @@ class AppTest {
 			firstOutboundRoad.getEnd()
 		);
 		assertTrue(lineManager.assignVehicle(vehicle, line));
-		vehicle.update(0.0);
+		stepVehicles(vehicle);
 		advanceVehicleUntil(vehicle, end.getPosition());
-		vehicle.update(0.1);
+		updateVehicles(0.1, vehicle);
 		assertEquals(new Point(100, -50), vehicle.getTarget());
 
 		routeGraph.createRoad(end.getPosition(), start.getPosition());
@@ -1125,7 +1147,7 @@ class AppTest {
 
 		assertTrue(lineManager.assignVehicle(vehicle, line));
 		assertFalse(lineManager.assignVehicle(vehicle, line));
-		vehicle.update(0.5);
+		updateVehicles(0.5, vehicle);
 		advanceVehicleUntil(vehicle, startStation.getPosition());
 		advanceVehicleUntil(vehicle, endStation.getPosition());
 		advanceVehicleUntil(vehicle, startStation.getPosition());
@@ -1197,7 +1219,7 @@ class AppTest {
 		Station endStation = game.getFixedEntityManager().createStation(new Point(125, 375));
 		game.getRoadGraph().addStationNode(startStation.getPosition());
 		game.getRoadGraph().addStationNode(endStation.getPosition());
-		game.update(0.0);
+		game.advanceFrame(0L);
 
 		Hud hud = game.getHud();
 		assertNull(hud.getOneShotActionButton());
@@ -1205,9 +1227,9 @@ class AppTest {
 		assertTrue(hud.handleClick(1020, 639, 1280, 720));
 		assertEquals("VALIDER", hud.getOneShotActionButton().getLabel());
 		game.getMouseHandlerManager().getMouseHandler().onLineStationSelection(50, 375);
-		game.update(0.0);
+		game.advanceFrame(0L);
 		game.getMouseHandlerManager().getMouseHandler().onLineStationSelection(125, 375);
-		game.update(0.0);
+		game.advanceFrame(0L);
 		assertEquals(0, game.getLineManager().getLines().size());
 		assertTrue(hud.handleClick(700, 685, 1280, 720));
 		assertEquals(1, game.getLineManager().getLines().size());
@@ -1233,7 +1255,7 @@ class AppTest {
 		assertSame(game.getLineManager().getLines().get(0), secondVehicle.getAssignedLine());
 		assertTrue(hud.handleClick(640, 406, 1280, 720));
 		assertEquals("LIGNE 1", hud.getDialog().getTitle());
-		game.update(0.0);
+		game.advanceFrame(0L);
 		advanceGameVehicleUntil(game, vehicle, endStation.getPosition());
 		advanceGameVehicleUntil(game, vehicle, startStation.getPosition());
 	}
@@ -1249,18 +1271,18 @@ class AppTest {
 		game.getRoadGraph().addStationNode(start.getPosition());
 		game.getRoadGraph().addStationNode(middle.getPosition());
 		game.getRoadGraph().addStationNode(end.getPosition());
-		game.update(0.0);
+		game.advanceFrame(0L);
 
 		Hud hud = game.getHud();
 		assertTrue(hud.handleClick(1020, 685, 1280, 720));
 		assertTrue(hud.handleClick(1020, 639, 1280, 720));
 		MouseHandler mouseHandler = game.getMouseHandlerManager().getMouseHandler();
 		mouseHandler.onLineStationSelection(50, 350);
-		game.update(0.0);
+		game.advanceFrame(0L);
 		mouseHandler.onLineStationSelection(100, 350);
-		game.update(0.0);
+		game.advanceFrame(0L);
 		mouseHandler.onLineStationSelection(150, 350);
-		game.update(0.0);
+		game.advanceFrame(0L);
 		assertTrue(game.getLineManager().getLines().isEmpty());
 
 		assertTrue(hud.handleClick(700, 685, 1280, 720));
@@ -1280,7 +1302,7 @@ class AppTest {
 		game.getRoadGraph().createRoad(start.getPosition(), end.getPosition());
 		game.getRoadGraph().addStationNode(start.getPosition());
 		game.getRoadGraph().addStationNode(end.getPosition());
-		game.update(0.0);
+		game.advanceFrame(0L);
 		TransitLine line = game.getLineManager().createLine(start, end).orElseThrow();
 		Vehicle vehicle = game.getVehicleManager().getVehicles().get(0);
 		assertTrue(game.getLineManager().assignVehicle(vehicle, line));
@@ -1320,7 +1342,7 @@ class AppTest {
 		Vehicle vehicle = new Vehicle(graph, road, 10, 2.0, road.getStart(), road.getEnd());
 		Point initialPosition = new Point(vehicle.getPosition());
 
-		vehicle.update(10.0);
+		updateVehicles(10.0, vehicle);
 
 		assertEquals(initialPosition, vehicle.getPosition());
 		assertNotNull(vehicle.getRoadPosition());
@@ -1345,10 +1367,10 @@ class AppTest {
 		);
 		assertTrue(lineManager.assignVehicle(vehicle, line));
 
-		vehicle.update(0.0);
-		vehicle.update(0.1);
+		stepVehicles(vehicle);
+		updateVehicles(0.1, vehicle);
 		double firstSpeed = vehicle.getSpeed();
-		vehicle.update(0.1);
+		updateVehicles(0.1, vehicle);
 		double secondSpeed = vehicle.getSpeed();
 
 		assertTrue(firstSpeed > 0.0);
@@ -1362,7 +1384,7 @@ class AppTest {
 			frame < 100 && !end.getPosition().equals(vehicle.getPosition());
 			frame++
 		) {
-			vehicle.update(0.1);
+			updateVehicles(0.1, vehicle);
 		}
 
 		assertEquals(end.getPosition(), vehicle.getPosition());
@@ -1384,8 +1406,8 @@ class AppTest {
 			road.getEnd()
 		);
 
-		vehicle.update(1.0);
-		vehicle.update(1.0);
+		updateVehicles(1.0, vehicle);
+		updateVehicles(1.0, vehicle);
 
 		assertEquals(new Point(100, 100), vehicle.getPosition());
 		assertTrue(vehicle.isParkedAtStation());
@@ -1461,7 +1483,7 @@ class AppTest {
 			incoming.getEnd()
 		);
 
-		vehicle.update(1.12);
+		updateVehicles(1.12, vehicle);
 
 		assertEquals(new Point(75, 110), vehicle.getPosition());
 		assertEquals(new Point(75, 200), vehicle.getTarget());
@@ -1482,7 +1504,7 @@ class AppTest {
 
 		graph.addRoad(new Road(new Point(100, 0), new Point(100, 200)));
 
-		vehicle.update(1.12);
+		updateVehicles(1.12, vehicle);
 
 		assertEquals(new Point(110, 100), vehicle.getPosition());
 		assertEquals(new Point(200, 100), vehicle.getTarget());
@@ -1508,7 +1530,7 @@ class AppTest {
 
 		assertTrue(graph.getVersion() > initialVersion);
 		assertEquals(0, unrelatedGraph.getVersion());
-		vehicle.update(1.12);
+		updateVehicles(1.12, vehicle);
 
 		assertEquals(new Point(110, 100), vehicle.getPosition());
 		assertEquals(new Point(200, 100), vehicle.getTarget());
@@ -1527,11 +1549,11 @@ class AppTest {
 			diagonalRoad.getStart(),
 			diagonalRoad.getEnd()
 		);
-		vehicle.update(1.0);
+		updateVehicles(1.0, vehicle);
 		Point positionBeforeRoadChange = new Point(vehicle.getPosition());
 
 		graph.addRoad(new Road(new Point(200, 0), new Point(200, 250)));
-		vehicle.update(0.15);
+		updateVehicles(0.15, vehicle);
 
 		assertNotNull(vehicle.getRoadPosition());
 		assertNotEquals(positionBeforeRoadChange, vehicle.getPosition());
@@ -1549,7 +1571,7 @@ class AppTest {
 			diagonalRoad.getStart(),
 			diagonalRoad.getEnd()
 		);
-		vehicle.update(1.65);
+		updateVehicles(1.65, vehicle);
 		Point positionBeforeRoadChange = new Point(vehicle.getPosition());
 
 		graph.addRoad(new Road(new Point(150, 0), new Point(150, 200)));
@@ -1560,7 +1582,7 @@ class AppTest {
 				.stream()
 				.anyMatch(road -> road.containsPoint(positionBeforeRoadChange))
 		);
-		vehicle.update(0.1);
+		updateVehicles(0.1, vehicle);
 
 		assertNotNull(vehicle.getRoadPosition());
 		assertNotEquals(positionBeforeRoadChange, vehicle.getPosition());
@@ -1579,10 +1601,10 @@ class AppTest {
 			initialRoad.getStart(),
 			initialRoad.getEnd()
 		);
-		vehicle.update(1.0);
+		updateVehicles(1.0, vehicle);
 
 		graph.addRoad(new Road(new Point(100, 0), new Point(100, 200)));
-		vehicle.update(0.12);
+		updateVehicles(0.12, vehicle);
 
 		assertEquals(new Point(110, 100), vehicle.getPosition());
 	}
@@ -1613,8 +1635,7 @@ class AppTest {
 		graph.addRoad(new Road(new Point(640, 0), new Point(640, 720)));
 
 		for (int frame = 0; frame < 100; frame++) {
-			firstVehicle.update(0.1);
-			secondVehicle.update(0.1);
+			updateVehicles(0.1, firstVehicle, secondVehicle);
 		}
 
 		assertTrue(firstVehicle.getPosition().x > 640 || firstVehicle.getPosition().y != 360);
@@ -1637,7 +1658,7 @@ class AppTest {
 
 		assertEquals(new Point(125, 100), graph.getIntersectionPositions().get(0));
 
-		vehicle.update(1.5);
+		updateVehicles(1.5, vehicle);
 
 		assertNotEquals(new Point(125, 100), vehicle.getPosition());
 		assertNotEquals(initialRoad, vehicle.getRoad());

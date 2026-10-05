@@ -15,6 +15,7 @@ import org.jeuroute.model.world.resources.ResourceBuilding;
 import org.jeuroute.model.world.terrain.TerrainMap;
 import org.jeuroute.model.world.transport.Depot;
 import org.jeuroute.model.world.transport.Station;
+import org.jeuroute.testing.SimulationTestClock;
 import org.junit.jupiter.api.Test;
 
 class ResourceBuildingManagerTest {
@@ -57,10 +58,13 @@ class ResourceBuildingManagerTest {
 	@Test
 	void gameManagerProducesResourcesForItsInitialBuildings() {
 		GameManager gameManager = new GameManager(new java.util.Random(42));
+		SimulationTestClock clock = new SimulationTestClock();
 		List<ResourceBuilding> buildings = gameManager.getResourceBuildingManager().getBuildings();
 		assertEquals(ResourceBuildingManager.INITIAL_BUILDING_COUNT, buildings.size());
 
-		gameManager.update(ResourceType.FOOD.getProductionIntervalSeconds());
+		clock.advanceSeconds(ResourceType.FOOD.getProductionIntervalSeconds(), tick ->
+			gameManager.getWorldMap().update(tick)
+		);
 
 		for (ResourceBuilding building : buildings) {
 			assertEquals(
@@ -73,11 +77,14 @@ class ResourceBuildingManagerTest {
 	@Test
 	void stationsCanReadAndWithdrawStockFromCapturedBuildings() {
 		ResourceBuildingManager manager = new ResourceBuildingManager(new Random(1));
+		SimulationTestClock clock = new SimulationTestClock();
 		ResourceBuilding building = new ResourceBuilding(new Point(100, 100), ResourceType.FOOD);
 		Station station = new Station(new Point(100 + (int) Station.CAPTURE_RADIUS, 100));
 		assertTrue(manager.addBuilding(building));
 
-		manager.update(ResourceType.FOOD.getProductionIntervalSeconds(), List.of(station));
+		clock.advanceSeconds(ResourceType.FOOD.getProductionIntervalSeconds(), tick ->
+			manager.update(tick, List.of(station))
+		);
 
 		assertEquals(List.of(building), station.getCapturedBuildings());
 		assertEquals(1, station.getAccessibleResourceStock(ResourceType.FOOD));
@@ -90,11 +97,14 @@ class ResourceBuildingManagerTest {
 	@Test
 	void buildingsOutsideCaptureRadiusAreNotAccessible() {
 		ResourceBuildingManager manager = new ResourceBuildingManager(new Random(1));
+		SimulationTestClock clock = new SimulationTestClock();
 		ResourceBuilding building = new ResourceBuilding(new Point(0, 0), ResourceType.METAL);
 		Station station = new Station(new Point((int) Station.CAPTURE_RADIUS + 1, 0));
 		assertTrue(manager.addBuilding(building));
 
-		manager.update(ResourceType.METAL.getProductionIntervalSeconds(), List.of(station));
+		clock.advanceSeconds(ResourceType.METAL.getProductionIntervalSeconds(), tick ->
+			manager.update(tick, List.of(station))
+		);
 
 		assertTrue(station.getCapturedBuildings().isEmpty());
 		assertEquals(0, station.getAccessibleResourceStock(ResourceType.METAL));
@@ -127,6 +137,7 @@ class ResourceBuildingManagerTest {
 
 	@Test
 	void capturedStationSeesDemandRenewAfterBuildingConsumesInput() {
+		SimulationTestClock clock = new SimulationTestClock();
 		ResourceBuilding woodBuilding = new ResourceBuilding(
 			new Point(100, 100),
 			ResourceType.WOOD
@@ -136,7 +147,10 @@ class ResourceBuildingManagerTest {
 		assertEquals(4, station.deliverResources(ResourceType.FOOD, 4));
 		assertEquals(0, station.getAccessibleResourceDemand(ResourceType.FOOD));
 
-		woodBuilding.update(ResourceBuilding.INPUT_CONSUMPTION_INTERVAL_SECONDS);
+		clock.advanceSeconds(
+			ResourceBuilding.INPUT_CONSUMPTION_INTERVAL_SECONDS,
+			woodBuilding::update
+		);
 
 		assertEquals(1, station.getAccessibleResourceDemand(ResourceType.FOOD));
 		assertEquals(Map.of(ResourceType.FOOD, 1), station.getCapturedResourceDemand());

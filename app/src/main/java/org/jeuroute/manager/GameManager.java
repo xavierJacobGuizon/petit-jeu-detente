@@ -5,10 +5,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.function.LongConsumer;
 import org.jeuroute.configuration.actions.ActionHandlerRegistry;
 import org.jeuroute.configuration.indicators.IndicatorRegistry;
 import org.jeuroute.gamecore.MouseHandler;
 import org.jeuroute.gamecore.PerformanceProfiler;
+import org.jeuroute.gamecore.controllers.LineCreationController;
+import org.jeuroute.gamecore.controllers.LineVehicleDialogController;
 import org.jeuroute.gamecore.hud.Hud;
 import org.jeuroute.gamecore.hud.elements.HudButton;
 import org.jeuroute.gamecore.time.SimulationClock;
@@ -37,7 +40,7 @@ public final class GameManager {
 	private final VehicleManager vehicleManager;
 	private final PersonManager personManager;
 	private final LineManager lineManager;
-	private final PerformanceProfiler performanceProfiler = new PerformanceProfiler();
+	private final PerformanceManager performanceManager = new PerformanceManager();
 
 	private final ActionHandlerRegistry actionHandlers = new ActionHandlerRegistry();
 	private final IndicatorRegistry indicatorRegistry = new IndicatorRegistry();
@@ -50,7 +53,9 @@ public final class GameManager {
 
 	private final HudManager hudManager;
 	private boolean debugModeEnabled;
+	private boolean personRouteDisplayEnabled;
 	private Runnable debugWindowCreationHandler = () -> {};
+	private LongConsumer performanceSampleHandler = ignored -> {};
 
 	public GameManager() {
 		this(new IslandTerrainGenerator(), new Random());
@@ -65,16 +70,19 @@ public final class GameManager {
 	}
 
 	public GameManager(TerrainGenerator terrainGenerator, Random random) {
-		worldMap = new WorldMap(terrainGenerator, Objects.requireNonNull(random));
-		vehicleManager = new VehicleManager(worldMap.getRoadGraph());
-		personManager = new PersonManager(
+		this.worldMap = new WorldMap(terrainGenerator, Objects.requireNonNull(random));
+		this.vehicleManager = new VehicleManager(worldMap.getRoadGraph());
+		this.personManager = new PersonManager(
 			worldMap.getTerrainMap(),
+			worldMap.getRoadGraph(),
 			worldMap.getHouseManager().getHouses(),
+			worldMap.getResourceBuildingManager().getBuildings(),
+			worldMap.getDepots(),
 			random,
-			performanceProfiler
+			performanceManager.getPerformanceProfiler()
 		);
-		lineManager = new LineManager(worldMap.getRoadGraph());
-		mouseHandlerManager = new MouseHandlerManager(
+		this.lineManager = new LineManager(worldMap.getRoadGraph());
+		this.mouseHandlerManager = new MouseHandlerManager(
 			worldMap.getRoadGraph(),
 			new MouseHandler(),
 			vehicleManager,
@@ -120,6 +128,10 @@ public final class GameManager {
 		initializeWorld();
 	}
 
+	public PerformanceManager getPerformanceManager() {
+		return performanceManager;
+	}
+
 	public RoadGraph getRoadGraph() {
 		return worldMap.getRoadGraph();
 	}
@@ -136,16 +148,20 @@ public final class GameManager {
 		return personManager;
 	}
 
-	public PerformanceProfiler getPerformanceProfiler() {
-		return performanceProfiler;
-	}
-
 	public boolean isDebugModeEnabled() {
 		return debugModeEnabled;
 	}
 
+	public boolean isPersonRouteDisplayEnabled() {
+		return personRouteDisplayEnabled;
+	}
+
 	public void setDebugWindowCreationHandler(Runnable handler) {
 		debugWindowCreationHandler = Objects.requireNonNull(handler);
+	}
+
+	public void setPerformanceSampleHandler(LongConsumer handler) {
+		performanceSampleHandler = Objects.requireNonNull(handler);
 	}
 
 	public Point getDebugMousePosition() {
@@ -204,14 +220,14 @@ public final class GameManager {
 		fps = Math.max(0, framesPerSecond);
 	}
 
-	public void update(double deltaSeconds) {
+	public void advanceFrame(long elapsedNanoseconds) {
 		mouseHandlerManager.processPendingInput();
 		Point depotPosition = mouseHandlerManager.getMouseHandler().consumeDepotPlacement();
 		if (depotPosition != null) {
 			createDepotAt(depotPosition);
 		}
 		synchronizeFixedEntities();
-		simulationClock.advanceSeconds(deltaSeconds, this::updateSimulation);
+		simulationClock.advance(elapsedNanoseconds, this::updateSimulation);
 	}
 
 	private void updateSimulation(SimulationTick tick) {
@@ -223,11 +239,11 @@ public final class GameManager {
 			personManager.update(tick);
 			worldMap.update(tick);
 		} finally {
-			performanceProfiler.record(
-				PerformanceProfiler.Section.SIMULATION,
-				System.nanoTime() - startedAtNanos
-			);
+			this.performanceManager
+				.getPerformanceProfiler()
+				.record(PerformanceProfiler.Section.SIMULATION, System.nanoTime() - startedAtNanos);
 		}
+		performanceSampleHandler.accept(tick.number());
 	}
 
 	public void cancelActiveAction() {
@@ -260,7 +276,7 @@ public final class GameManager {
 	private void initializeWorld() {
 		Depot depot = worldMap.initializeDefaultLayout();
 
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < 100000; i++) {
 			personManager.addPerson(new Point(500, 500));
 		}
 
@@ -348,24 +364,35 @@ public final class GameManager {
 	}
 
 	private void initializeHud() {
+		// Initialise les indicateurs HUD
 		actionHandlers.registerDefaults(
 			this.mouseHandlerManager.getMouseHandler(),
 			lineCreationController::toggle,
 			this::toggleDepotCreation
 		);
-		indicatorRegistry.registerDefaults(
-			() -> Integer.toString(fps),
-			() -> Integer.toString(worldMap.getRoadGraph().getRoads().size()),
-			() -> Integer.toString(worldMap.getFixedEntityManager().getIntersections().size()),
-			() -> Integer.toString(vehicleManager.getVehicles().size()),
-			() -> Integer.toString(worldMap.getStations().size()),
-			() -> Integer.toString(personManager.getPeople().size())
+
+		indicatorRegistry.registerAll(
+			IndicatorRegistry.builder()
+				.fps(() -> Integer.toString(fps))
+				.roads(() -> Integer.toString(worldMap.getRoadGraph().getRoads().size()))
+				.intersections(() ->
+					Integer.toString(worldMap.getFixedEntityManager().getIntersections().size())
+				)
+				.vehicles(() -> Integer.toString(vehicleManager.getVehicles().size()))
+				.stations(() -> Integer.toString(worldMap.getStations().size()))
+				.people(() -> Integer.toString(personManager.getPeople().size()))
+				.build()
 		);
+
 		actionHandlers.register("toggle-person", () -> {
 			MouseHandler handler = mouseHandlerManager.getMouseHandler();
 			handler.setPersonCreationEnabled(!handler.isPersonCreationEnabled());
 		});
 		actionHandlers.register("toggle-debug", () -> debugModeEnabled = !debugModeEnabled);
+		actionHandlers.register(
+			"toggle-person-routes",
+			() -> personRouteDisplayEnabled = !personRouteDisplayEnabled
+		);
 		actionHandlers.register("create-debug-window", () -> debugWindowCreationHandler.run());
 	}
 }

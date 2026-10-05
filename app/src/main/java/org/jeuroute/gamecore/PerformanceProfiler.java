@@ -13,11 +13,16 @@ public final class PerformanceProfiler {
 		UPDATE("UPDATE"),
 		SIMULATION("SIM"),
 		PERSON_UPDATE("PEOPLE"),
+		PERSON_MOVEMENT("MOVE"),
+		PERSON_IDLE_WAKE("IDLE WAKE"),
 		ROUTE_PLANNING("ROUTE"),
+		PLANNING_START("PLAN START"),
+		PATHFINDING_SLICE("A* SLICE"),
 		WORLD_RENDER("WORLD"),
 		PERSON_RENDER("PERSON DRAW"),
 		DEBUG_PREPARE("DBG PREP"),
 		DEBUG_RENDER("DBG DRAW"),
+		DEBUG_GPU("DBG GPU"),
 		HUD_RENDER("HUD");
 
 		private final String label;
@@ -33,12 +38,46 @@ public final class PerformanceProfiler {
 
 	public record Statistics(int sampleCount, double averageNanos, long p95Nanos, long maxNanos) {}
 
+	public record RouteGeometryStatistics(
+		int rawSegments,
+		int visibleSegments,
+		int mergedLines,
+		int changedRoutes,
+		int segmentTransitions
+	) {}
+
+	public record PathfindingQueueStatistics(
+		int queueDepth,
+		int requestsStarted,
+		int requestsCompleted,
+		int requestsDeferred,
+		int workUnits,
+		long maxWaitTicks
+	) {}
+
+	public record PathfindingCacheStatistics(
+		long routeHits,
+		long routeMisses,
+		long coalescedSearches
+	) {}
+
 	private final long[][] durations = new long[Section.values().length][SAMPLE_CAPACITY];
 	private final long[][] timestamps = new long[Section.values().length][SAMPLE_CAPACITY];
 	private final int[] cursors = new int[Section.values().length];
 	private final int[] counts = new int[Section.values().length];
 	private final Statistics[] statistics = new Statistics[Section.values().length];
 	private final long[] sortBuffer = new long[SAMPLE_CAPACITY];
+	private volatile RouteGeometryStatistics routeGeometryStatistics = new RouteGeometryStatistics(
+		0,
+		0,
+		0,
+		0,
+		0
+	);
+	private volatile PathfindingQueueStatistics pathfindingQueueStatistics =
+		new PathfindingQueueStatistics(0, 0, 0, 0, 0, 0L);
+	private volatile PathfindingCacheStatistics pathfindingCacheStatistics =
+		new PathfindingCacheStatistics(0L, 0L, 0L);
 	private long lastSnapshotNanos = Long.MIN_VALUE;
 	private long snapshotVersion;
 
@@ -53,9 +92,16 @@ public final class PerformanceProfiler {
 	}
 
 	public boolean refreshSnapshot(long nowNanos) {
+		return refreshSnapshot(nowNanos, SNAPSHOT_INTERVAL_NANOS);
+	}
+
+	public boolean refreshSnapshot(long nowNanos, long minimumIntervalNanos) {
+		if (minimumIntervalNanos < 0) {
+			throw new IllegalArgumentException("Snapshot interval cannot be negative");
+		}
 		if (
 			lastSnapshotNanos != Long.MIN_VALUE &&
-			nowNanos - lastSnapshotNanos < SNAPSHOT_INTERVAL_NANOS
+			nowNanos - lastSnapshotNanos < minimumIntervalNanos
 		) {
 			return false;
 		}
@@ -76,6 +122,30 @@ public final class PerformanceProfiler {
 
 	public long snapshotVersion() {
 		return snapshotVersion;
+	}
+
+	public void recordRouteGeometryStatistics(RouteGeometryStatistics statistics) {
+		routeGeometryStatistics = java.util.Objects.requireNonNull(statistics);
+	}
+
+	public RouteGeometryStatistics routeGeometryStatistics() {
+		return routeGeometryStatistics;
+	}
+
+	public void recordPathfindingQueueStatistics(PathfindingQueueStatistics statistics) {
+		pathfindingQueueStatistics = java.util.Objects.requireNonNull(statistics);
+	}
+
+	public PathfindingQueueStatistics pathfindingQueueStatistics() {
+		return pathfindingQueueStatistics;
+	}
+
+	public void recordPathfindingCacheStatistics(PathfindingCacheStatistics statistics) {
+		pathfindingCacheStatistics = java.util.Objects.requireNonNull(statistics);
+	}
+
+	public PathfindingCacheStatistics pathfindingCacheStatistics() {
+		return pathfindingCacheStatistics;
 	}
 
 	void recordAt(Section section, long timestampNanos, long durationNanos) {

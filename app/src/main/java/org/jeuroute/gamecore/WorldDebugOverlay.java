@@ -1,23 +1,28 @@
 package org.jeuroute.gamecore;
 
+import java.util.List;
 import org.jeuroute.gamecore.camera.WorldViewBounds;
 import org.jeuroute.model.records.world.WorldRenderData;
 import org.lwjgl.opengl.GL;
 
 public final class WorldDebugOverlay implements AutoCloseable {
 
-	private static final long REFRESH_TICKS = 60;
-	private static final long VIEW_REFRESH_TICKS = 30;
+	private static final long REFRESH_TICKS = 6;
+	private static final long VIEW_REFRESH_TICKS = 6;
 
 	private final PerformanceProfiler profiler;
 	private final WorldDebugMeshRenderer meshRenderer;
+	private final GpuTimerQuery gpuTimerQuery;
+	private final PersonRouteGeometryCache routeGeometryCache = new PersonRouteGeometryCache();
 	private long lastRefreshTick = -1;
 	private WorldViewBounds lastViewBounds;
+	private List<DebugRouteLineMerger.Line> preparedPersonRouteLines = List.of();
 	private boolean dataReady;
 
 	public WorldDebugOverlay(PerformanceProfiler profiler) {
 		this.profiler = profiler;
 		meshRenderer = GL.getCapabilities().OpenGL33 ? new WorldDebugMeshRenderer() : null;
+		gpuTimerQuery = meshRenderer == null ? null : new GpuTimerQuery();
 	}
 
 	public boolean usesInstancedRenderer() {
@@ -25,26 +30,40 @@ public final class WorldDebugOverlay implements AutoCloseable {
 	}
 
 	public void render(
-		boolean enabled,
+		boolean routeDisplayEnabled,
 		WorldRenderData world,
 		double zoom,
 		WorldViewBounds viewBounds,
 		long currentTick
 	) {
-		if (!enabled) {
-			invalidate();
+		if (!routeDisplayEnabled) {
+			if (dataReady) {
+				invalidate();
+			}
 			return;
 		}
 
-		if (meshRenderer != null) {
-			refreshIfNeeded(world, viewBounds, zoom, currentTick);
-		}
+		refreshIfNeeded(world, viewBounds, zoom, currentTick);
 
 		long renderStartedAtNanos = System.nanoTime();
-		if (meshRenderer == null) {
-			WorldDebugRenderer.renderDestinations(world, zoom, viewBounds);
-		} else {
-			meshRenderer.renderDestinations(zoom);
+		if (gpuTimerQuery != null) {
+			gpuTimerQuery.begin(profiler);
+		}
+		try {
+			if (meshRenderer == null) {
+				WorldDebugRenderer.renderDestinations(
+					world,
+					zoom,
+					viewBounds,
+					preparedPersonRouteLines
+				);
+			} else {
+				meshRenderer.renderDestinations(zoom);
+			}
+		} finally {
+			if (gpuTimerQuery != null) {
+				gpuTimerQuery.end();
+			}
 		}
 		profiler.record(
 			PerformanceProfiler.Section.DEBUG_RENDER,
@@ -56,6 +75,9 @@ public final class WorldDebugOverlay implements AutoCloseable {
 	public void close() {
 		if (meshRenderer != null) {
 			meshRenderer.close();
+		}
+		if (gpuTimerQuery != null) {
+			gpuTimerQuery.close();
 		}
 	}
 
@@ -74,7 +96,23 @@ public final class WorldDebugOverlay implements AutoCloseable {
 		}
 
 		long prepareStartedAtNanos = System.nanoTime();
-		meshRenderer.updateDestinations(world, viewBounds, zoom);
+		preparedPersonRouteLines = routeGeometryCache.collectVisibleLines(
+			world.people(),
+			viewBounds
+		);
+		PersonRouteGeometryCache.Diagnostics diagnostics = routeGeometryCache.diagnostics();
+		profiler.recordRouteGeometryStatistics(
+			new PerformanceProfiler.RouteGeometryStatistics(
+				diagnostics.rawSegments(),
+				diagnostics.visibleSegments(),
+				diagnostics.mergedLines(),
+				diagnostics.changedRoutes(),
+				diagnostics.segmentTransitions()
+			)
+		);
+		if (meshRenderer != null) {
+			meshRenderer.updateDestinations(world, viewBounds, zoom, preparedPersonRouteLines);
+		}
 		profiler.record(
 			PerformanceProfiler.Section.DEBUG_PREPARE,
 			System.nanoTime() - prepareStartedAtNanos
@@ -88,5 +126,10 @@ public final class WorldDebugOverlay implements AutoCloseable {
 		dataReady = false;
 		lastRefreshTick = -1;
 		lastViewBounds = null;
+		preparedPersonRouteLines = List.of();
+		routeGeometryCache.clear();
+		profiler.recordRouteGeometryStatistics(
+			new PerformanceProfiler.RouteGeometryStatistics(0, 0, 0, 0, 0)
+		);
 	}
 }

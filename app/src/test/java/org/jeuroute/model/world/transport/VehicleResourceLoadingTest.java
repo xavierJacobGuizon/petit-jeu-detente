@@ -7,10 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.awt.Point;
 import java.util.List;
 import org.jeuroute.manager.LineManager;
+import org.jeuroute.model.world.enums.ResourceType;
 import org.jeuroute.model.world.network.Road;
 import org.jeuroute.model.world.network.RoadGraph;
 import org.jeuroute.model.world.resources.ResourceBuilding;
-import org.jeuroute.model.world.enums.ResourceType;
+import org.jeuroute.testing.SimulationTestClock;
 import org.junit.jupiter.api.Test;
 
 class VehicleResourceLoadingTest {
@@ -38,8 +39,15 @@ class VehicleResourceLoadingTest {
 			end.getPosition(),
 			ResourceType.METAL
 		);
-		woodBuilding.update(ResourceType.WOOD.getProductionIntervalSeconds() * 6.0);
-		foodBuilding.update(ResourceType.FOOD.getProductionIntervalSeconds() * 3.0);
+		SimulationTestClock buildingClock = new SimulationTestClock();
+		buildingClock.advanceSeconds(
+			ResourceType.WOOD.getProductionIntervalSeconds() * 6.0,
+			woodBuilding::update
+		);
+		buildingClock.advanceSeconds(
+			ResourceType.FOOD.getProductionIntervalSeconds() * 3.0,
+			foodBuilding::update
+		);
 		start.synchronizeCapturedBuildings(List.of(woodBuilding));
 		middle.synchronizeCapturedBuildings(List.of(foodBuilding));
 		end.synchronizeCapturedBuildings(List.of(metalBuilding));
@@ -55,17 +63,18 @@ class VehicleResourceLoadingTest {
 			middle.getPosition()
 		);
 		assertTrue(vehicle.assignLine(line));
-		vehicle.update(0.0);
+		SimulationTestClock vehicleClock = new SimulationTestClock();
+		vehicleClock.step(vehicle::update);
 		assertTrue(vehicle.isWaitingForResources());
 		assertEquals(0, vehicle.getCargoAmount());
 
-		vehicle.update(0.49);
+		vehicleClock.advanceSeconds(0.49, vehicle::update);
 		assertEquals(0, vehicle.getCargoAmount());
-		vehicle.update(0.02);
+		vehicleClock.advanceSeconds(0.02, vehicle::update);
 		assertEquals(1, vehicle.getCargoAmount());
 		assertEquals(ResourceType.WOOD, vehicle.getCargoType());
 
-		vehicle.update(1.5);
+		vehicleClock.advanceSeconds(1.5, vehicle::update);
 		assertEquals(Vehicle.MAX_CARGO_UNITS, vehicle.getCargoAmount());
 		assertEquals(2, woodBuilding.getStock());
 		assertFalse(vehicle.isWaitingForResources());
@@ -75,7 +84,7 @@ class VehicleResourceLoadingTest {
 			frame < 3600 && !middle.getPosition().equals(vehicle.getPosition());
 			frame++
 		) {
-			vehicle.update(1.0 / 60.0);
+			vehicleClock.step(vehicle::update);
 		}
 		assertEquals(middle.getPosition(), vehicle.getPosition());
 		assertEquals(4, vehicle.getCargoAmount());
@@ -87,20 +96,20 @@ class VehicleResourceLoadingTest {
 			frame < 3600 && !end.getPosition().equals(vehicle.getPosition());
 			frame++
 		) {
-			vehicle.update(1.0 / 60.0);
+			vehicleClock.step(vehicle::update);
 		}
 		assertEquals(end.getPosition(), vehicle.getPosition());
 		assertTrue(vehicle.isWaitingForResources());
 		assertEquals(4, vehicle.getCargoAmount());
 
-		vehicle.update(0.47);
+		vehicleClock.advanceSeconds(0.47, vehicle::update);
 		assertEquals(4, vehicle.getCargoAmount());
-		vehicle.update(0.04);
+		vehicleClock.advanceSeconds(0.04, vehicle::update);
 		assertEquals(3, vehicle.getCargoAmount());
 		assertEquals(ResourceType.WOOD, vehicle.getCargoType());
 		assertEquals(1, metalBuilding.getReceivedResourceStock());
 
-		vehicle.update(1.5);
+		vehicleClock.advanceSeconds(1.5, vehicle::update);
 		assertEquals(0, vehicle.getCargoAmount());
 		assertEquals(4, metalBuilding.getReceivedResourceStock());
 		assertFalse(vehicle.isWaitingForResources());

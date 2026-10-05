@@ -73,10 +73,6 @@ public final class ResourceBuilding {
 		return acceptedAmount;
 	}
 
-	public void update(double deltaSeconds) {
-		advanceTicks(SimulationTick.ticksForSeconds(deltaSeconds));
-	}
-
 	public void update(SimulationTick tick) {
 		Objects.requireNonNull(tick, "tick cannot be null");
 		advanceTicks(1);

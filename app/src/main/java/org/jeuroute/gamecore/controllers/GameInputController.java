@@ -1,9 +1,11 @@
-package org.jeuroute.gamecore;
+package org.jeuroute.gamecore.controllers;
 
 import static org.lwjgl.glfw.GLFW.*;
 
 import java.awt.Point;
 import java.util.Objects;
+import org.jeuroute.gamecore.MouseHandler;
+import org.jeuroute.gamecore.WindowMetrics;
 import org.jeuroute.gamecore.camera.Camera2D;
 import org.jeuroute.gamecore.hud.Hud;
 import org.jeuroute.gamecore.hud.HudWindowManager;
