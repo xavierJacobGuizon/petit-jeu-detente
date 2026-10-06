@@ -13,12 +13,12 @@ import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
-import org.jeuroute.gamecore.PerformanceCsvRecorder;
-import org.jeuroute.gamecore.PerformanceProfiler;
+import org.jeuroute.gamecore.performance.PerformanceCsvRecorder;
 import org.jeuroute.gamecore.hud.HudWindow;
+import org.jeuroute.gamecore.performance.PerformanceProfiler;
 import org.jeuroute.model.records.hud.HudBounds;
-import org.jeuroute.model.records.utils.TextRun;
-import org.jeuroute.utils.CharUtils;
+import org.jeuroute.model.records.presentation.TextRun;
+import org.jeuroute.gamecore.rendering.text.CharUtils;
 
 public final class DebugProfilerWindowContent implements HudWindow.ContentRenderer {
 

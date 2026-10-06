@@ -16,24 +16,24 @@ import java.util.IdentityHashMap;
 import java.util.Locale;
 import java.util.Map;
 import org.jeuroute.gamecore.hud.HudWindow;
-import org.jeuroute.gamecore.hud.HudWindowManager;
-import org.jeuroute.gamecore.hud.HudWindowMetrics;
-import org.jeuroute.model.records.utils.TextRun;
-import org.jeuroute.utils.CharUtils;
+import org.jeuroute.gamecore.hud.HudWindowService;
+import org.jeuroute.gamecore.hud.constants.HudWindowMetrics;
+import org.jeuroute.model.records.presentation.TextRun;
+import org.jeuroute.gamecore.rendering.text.CharUtils;
 
 public final class HudWindowRenderer {
 
 	private final Map<HudWindow, WindowText> windowTexts = new IdentityHashMap<>();
 
 	public void render(
-		HudWindowManager manager,
+		HudWindowService service,
 		int windowWidth,
 		int windowHeight,
 		int framebufferWidth,
 		int framebufferHeight
 	) {
-		windowTexts.keySet().removeIf(window -> !manager.windows().contains(window));
-		for (HudWindow window : manager.windows()) {
+		windowTexts.keySet().removeIf(window -> !service.windows().contains(window));
+		for (HudWindow window : service.windows()) {
 			WindowText text = windowTexts.computeIfAbsent(window, ignored -> new WindowText());
 			text.update(window);
 			renderBackground(window);

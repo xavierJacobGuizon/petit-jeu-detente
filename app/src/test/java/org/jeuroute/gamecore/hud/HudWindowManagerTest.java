@@ -4,13 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.jeuroute.gamecore.hud.constants.HudWindowMetrics;
 import org.junit.jupiter.api.Test;
 
 class HudWindowManagerTest {
 
 	@Test
 	void outsideClickDoesNotCloseWindow() {
-		HudWindowManager manager = new HudWindowManager();
+		HudWindowService manager = new HudWindowService();
 		manager.open(HudWindowSpec.standard("Profiler", 10, 20, 300, 200, ignored -> {}));
 
 		assertFalse(manager.handleMousePressed(500, 500));
@@ -19,7 +20,7 @@ class HudWindowManagerTest {
 
 	@Test
 	void titleBarDragMovesWindowAndReleaseStopsDragging() {
-		HudWindowManager manager = new HudWindowManager();
+		HudWindowService manager = new HudWindowService();
 		HudWindow window = manager.open(
 			HudWindowSpec.standard("Profiler", 10, 20, 300, 200, ignored -> {})
 		);
@@ -37,7 +38,7 @@ class HudWindowManagerTest {
 
 	@Test
 	void closeButtonRemovesOnlyItsWindow() {
-		HudWindowManager manager = new HudWindowManager();
+		HudWindowService manager = new HudWindowService();
 		manager.open(HudWindowSpec.standard("Profiler", 10, 20, 300, 200, ignored -> {}));
 
 		assertTrue(manager.handleMousePressed(284, 31));
@@ -46,7 +47,7 @@ class HudWindowManagerTest {
 
 	@Test
 	void contentClickIsForwardedWithoutClosingWindow() {
-		HudWindowManager manager = new HudWindowManager();
+		HudWindowService manager = new HudWindowService();
 		int[] clickCount = { 0 };
 		HudWindow.ContentRenderer contentRenderer = new HudWindow.ContentRenderer() {
 			@Override
@@ -90,7 +91,7 @@ class HudWindowManagerTest {
 				return true;
 			}
 		};
-		HudWindowManager manager = new HudWindowManager();
+		HudWindowService manager = new HudWindowService();
 		HudWindow window = manager.open(
 			HudWindowSpec.standard("Profiler", 10, 20, 300, 200, contentRenderer)
 		);
@@ -103,7 +104,7 @@ class HudWindowManagerTest {
 
 	@Test
 	void rightBorderResizesWidthOnly() {
-		HudWindowManager manager = new HudWindowManager();
+		HudWindowService manager = new HudWindowService();
 		HudWindow window = manager.open(
 			HudWindowSpec.standard("Profiler", 10, 20, 300, 200, ignored -> {})
 		);
@@ -117,7 +118,7 @@ class HudWindowManagerTest {
 
 	@Test
 	void bottomBorderResizesHeightOnly() {
-		HudWindowManager manager = new HudWindowManager();
+		HudWindowService manager = new HudWindowService();
 		HudWindow window = manager.open(
 			HudWindowSpec.standard("Profiler", 10, 20, 300, 200, ignored -> {})
 		);
@@ -131,7 +132,7 @@ class HudWindowManagerTest {
 
 	@Test
 	void bottomRightCornerResizesBothDimensionsAndRespectsMinimums() {
-		HudWindowManager manager = new HudWindowManager();
+		HudWindowService manager = new HudWindowService();
 		HudWindow window = manager.open(
 			HudWindowSpec.standard("Profiler", 10, 20, 300, 200, ignored -> {})
 		);
@@ -145,7 +146,7 @@ class HudWindowManagerTest {
 
 	@Test
 	void supportsMultipleWindowsAndRoutesInputToTheFrontmostWindow() {
-		HudWindowManager manager = new HudWindowManager();
+		HudWindowService manager = new HudWindowService();
 		int[] lowerWindowClicks = { 0 };
 		int[] upperWindowClicks = { 0 };
 		HudWindow.ContentRenderer lowerContent = clickCounter(lowerWindowClicks);
@@ -170,7 +171,7 @@ class HudWindowManagerTest {
 
 	@Test
 	void closingWindowByIdRunsItsCloseHandlerOnlyOnce() {
-		HudWindowManager manager = new HudWindowManager();
+		HudWindowService manager = new HudWindowService();
 		int[] closeCount = { 0 };
 		HudWindowSpec spec = new HudWindowSpec(
 			"CLOSABLE",
@@ -194,7 +195,7 @@ class HudWindowManagerTest {
 
 	@Test
 	void windowSpecControlsResizeAndCloseBehaviorPerInstance() {
-		HudWindowManager manager = new HudWindowManager();
+		HudWindowService manager = new HudWindowService();
 		HudWindow window = manager.open(
 			new HudWindowSpec(
 				"FIXED",

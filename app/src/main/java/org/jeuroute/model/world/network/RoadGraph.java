@@ -18,7 +18,7 @@ import org.jeuroute.model.records.world.RoadGraphPreviousStep;
 import org.jeuroute.model.records.world.RoadGraphRoadInterval;
 import org.jeuroute.model.records.world.RoadLeg;
 import org.jeuroute.model.world.terrain.TerrainMap;
-import org.jeuroute.utils.GeometryUtils;
+import org.jeuroute.model.world.geometry.GeometryUtils;
 
 public final class RoadGraph {
 

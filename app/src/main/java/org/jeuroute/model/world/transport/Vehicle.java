@@ -12,7 +12,7 @@ import org.jeuroute.model.world.network.RoadGraph;
 import org.jeuroute.model.world.network.RoadPath;
 import org.jeuroute.model.world.network.RoadPosition;
 import org.jeuroute.model.world.skin.VehicleSkin;
-import org.jeuroute.utils.GeometryUtils;
+import org.jeuroute.model.world.geometry.GeometryUtils;
 
 public class Vehicle {
 

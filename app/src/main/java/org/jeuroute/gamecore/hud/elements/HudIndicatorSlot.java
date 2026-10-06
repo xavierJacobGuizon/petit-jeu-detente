@@ -3,7 +3,7 @@ package org.jeuroute.gamecore.hud.elements;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.jeuroute.gamecore.enums.HudAnchor;
+import org.jeuroute.model.records.configuration.enums.HudAnchor;
 
 public final class HudIndicatorSlot {
 

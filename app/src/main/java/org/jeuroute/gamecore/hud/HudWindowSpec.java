@@ -1,6 +1,7 @@
 package org.jeuroute.gamecore.hud;
 
 import java.util.Objects;
+import org.jeuroute.gamecore.hud.constants.HudWindowMetrics;
 
 public record HudWindowSpec(
 	String title,

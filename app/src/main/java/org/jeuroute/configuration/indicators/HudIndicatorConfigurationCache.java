@@ -3,7 +3,7 @@ package org.jeuroute.configuration.indicators;
 import java.util.ArrayList;
 import java.util.List;
 import org.jeuroute.configuration.XmlResourceCache;
-import org.jeuroute.gamecore.enums.HudAnchor;
+import org.jeuroute.model.records.configuration.enums.HudAnchor;
 import org.jeuroute.model.records.configuration.HudIndicatorConfiguration;
 import org.jeuroute.model.records.configuration.HudIndicatorSlotConfiguration;
 import org.w3c.dom.Element;

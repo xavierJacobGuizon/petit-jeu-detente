@@ -11,8 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jeuroute.gamecore.hud.HudTable;
 import org.jeuroute.model.records.hud.HudBounds;
-import org.jeuroute.model.records.utils.TextRun;
-import org.jeuroute.utils.CharUtils;
+import org.jeuroute.model.records.presentation.TextRun;
+import org.jeuroute.gamecore.rendering.text.CharUtils;
 
 public final class HudTableRenderer {
 

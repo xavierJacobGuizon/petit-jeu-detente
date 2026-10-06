@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Point;
 import java.util.List;
-import org.jeuroute.manager.LineManager;
+import org.jeuroute.manager.transport.LineManager;
 import org.jeuroute.model.world.enums.ResourceType;
 import org.jeuroute.model.world.network.Road;
 import org.jeuroute.model.world.network.RoadGraph;

@@ -2,7 +2,7 @@ package org.jeuroute.gamecore.hud.presentation;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.jeuroute.gamecore.enums.HudAnchor;
+import org.jeuroute.model.records.configuration.enums.HudAnchor;
 import org.jeuroute.gamecore.hud.elements.HudIndicatorSlot;
 import org.jeuroute.model.records.hud.HudBounds;
 import org.jeuroute.model.records.hud.HudDialogPlacement;

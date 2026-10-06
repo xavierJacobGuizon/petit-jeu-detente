@@ -4,13 +4,12 @@ import static org.lwjgl.glfw.GLFW.*;
 
 import java.awt.Point;
 import java.util.Objects;
-import org.jeuroute.gamecore.MouseHandler;
-import org.jeuroute.gamecore.WindowMetrics;
 import org.jeuroute.gamecore.camera.Camera2D;
 import org.jeuroute.gamecore.hud.Hud;
-import org.jeuroute.gamecore.hud.HudWindowManager;
+import org.jeuroute.gamecore.hud.HudWindowService;
+import org.jeuroute.model.records.window.WindowMetrics;
 
-public final class GameInputController {
+public final class GameInputController implements WindowInputController {
 
 	private static final double RIGHT_DRAG_THRESHOLD_PIXELS = 5.0;
 	private static final long RIGHT_CLICK_MAX_DURATION_NS = 2_000_000_000L;
@@ -18,7 +17,7 @@ public final class GameInputController {
 	private final Camera2D camera;
 	private final MouseHandler mouseHandler;
 	private final Hud hud;
-	private final HudWindowManager hudWindowManager;
+	private final HudWindowService hudWindowService;
 	private final Runnable cancelActiveAction;
 	private WindowMetrics metrics;
 	private double mouseX;
@@ -40,14 +39,14 @@ public final class GameInputController {
 		Camera2D camera,
 		MouseHandler mouseHandler,
 		Hud hud,
-		HudWindowManager hudWindowManager,
+		HudWindowService hudWindowService,
 		Runnable cancelActiveAction,
 		WindowMetrics metrics
 	) {
 		this.camera = Objects.requireNonNull(camera);
 		this.mouseHandler = mouseHandler;
 		this.hud = hud;
-		this.hudWindowManager = hudWindowManager;
+		this.hudWindowService = hudWindowService;
 		this.cancelActiveAction = Objects.requireNonNull(cancelActiveAction);
 		this.metrics = Objects.requireNonNull(metrics);
 		lastCameraUpdateNs = System.nanoTime();
@@ -92,15 +91,15 @@ public final class GameInputController {
 		mouseY = nextMouseY;
 		lastPanMouseX = nextMouseX;
 		lastPanMouseY = nextMouseY;
-		if (hudWindowManager != null) {
-			hudWindowManager.handleMouseMoved(mouseX, mouseY, metrics.width(), metrics.height());
+		if (hudWindowService != null) {
+			hudWindowService.handleMouseMoved(mouseX, mouseY, metrics.width(), metrics.height());
 		}
 		updateWorldMousePosition();
 	}
 
 	public void handleScroll(double scrollAmount) {
 		if (
-			hudWindowManager == null || !hudWindowManager.handleScroll(mouseX, mouseY, scrollAmount)
+			hudWindowService == null || !hudWindowService.handleScroll(mouseX, mouseY, scrollAmount)
 		) {
 			camera.zoomAt(scrollAmount, mouseX, mouseY, metrics.width(), metrics.height());
 		}
@@ -120,8 +119,8 @@ public final class GameInputController {
 		if (action == GLFW_PRESS) {
 			if (
 				button == GLFW_MOUSE_BUTTON_LEFT &&
-				hudWindowManager != null &&
-				hudWindowManager.handleMousePressed(mouseX, mouseY)
+				hudWindowService != null &&
+				hudWindowService.handleMousePressed(mouseX, mouseY)
 			) {
 				return true;
 			}
@@ -147,8 +146,8 @@ public final class GameInputController {
 		if (action == GLFW_RELEASE) {
 			if (
 				button == GLFW_MOUSE_BUTTON_LEFT &&
-				hudWindowManager != null &&
-				hudWindowManager.handleMouseReleased()
+				hudWindowService != null &&
+				hudWindowService.handleMouseReleased()
 			) {
 				return true;
 			}

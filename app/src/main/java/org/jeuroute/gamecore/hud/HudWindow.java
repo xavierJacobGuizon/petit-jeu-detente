@@ -1,6 +1,7 @@
 package org.jeuroute.gamecore.hud;
 
 import java.util.Objects;
+import org.jeuroute.gamecore.hud.constants.HudWindowMetrics;
 import org.jeuroute.model.records.hud.HudBounds;
 
 public final class HudWindow {

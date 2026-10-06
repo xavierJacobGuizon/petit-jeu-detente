@@ -9,11 +9,11 @@ import static org.lwjgl.opengl.GL11.glVertex2i;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import org.jeuroute.gamecore.PerformanceProfiler;
 import org.jeuroute.gamecore.hud.HudTable;
 import org.jeuroute.gamecore.hud.HudTable.Alignment;
 import org.jeuroute.gamecore.hud.HudTable.Column;
 import org.jeuroute.gamecore.hud.HudTable.Row;
+import org.jeuroute.gamecore.performance.PerformanceProfiler;
 import org.jeuroute.model.records.hud.HudBounds;
 
 public final class PerformanceProfilerRenderer {

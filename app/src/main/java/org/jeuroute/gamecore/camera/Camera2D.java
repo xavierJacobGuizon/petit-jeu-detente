@@ -4,6 +4,7 @@ import static org.lwjgl.opengl.GL11.glScaled;
 import static org.lwjgl.opengl.GL11.glTranslated;
 
 import java.awt.Point;
+import org.jeuroute.model.records.camera.WorldViewBounds;
 
 public final class Camera2D {
 

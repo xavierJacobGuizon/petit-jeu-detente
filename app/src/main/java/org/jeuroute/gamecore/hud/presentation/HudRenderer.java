@@ -15,8 +15,8 @@ import org.jeuroute.model.records.hud.HudBounds;
 import org.jeuroute.model.records.hud.HudDialogPlacement;
 import org.jeuroute.model.records.hud.HudDrawButton;
 import org.jeuroute.model.records.hud.HudSlotPlacement;
-import org.jeuroute.model.records.utils.TextRun;
-import org.jeuroute.utils.CharUtils;
+import org.jeuroute.model.records.presentation.TextRun;
+import org.jeuroute.gamecore.rendering.text.CharUtils;
 
 public final class HudRenderer {
 

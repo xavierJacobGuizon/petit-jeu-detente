@@ -3,6 +3,7 @@ package org.jeuroute.gamecore.hud;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.jeuroute.gamecore.hud.constants.HudWindowMetrics;
 import org.jeuroute.gamecore.hud.presentation.HudWindowRenderer;
 import org.jeuroute.model.records.hud.HudBounds;
 

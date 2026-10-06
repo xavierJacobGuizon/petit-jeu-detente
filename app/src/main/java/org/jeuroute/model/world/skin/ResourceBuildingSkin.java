@@ -4,7 +4,7 @@ import static org.lwjgl.opengl.GL11.*;
 
 import java.awt.Point;
 import org.jeuroute.model.world.enums.ResourceType;
-import org.jeuroute.utils.CharUtils;
+import org.jeuroute.gamecore.rendering.text.CharUtils;
 
 public final class ResourceBuildingSkin implements Skin {
 

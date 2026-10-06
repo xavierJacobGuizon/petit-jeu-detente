@@ -10,7 +10,7 @@ import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import org.jeuroute.gamecore.MouseHandler;
+import org.jeuroute.gamecore.controllers.MouseHandler;
 import org.jeuroute.gamecore.hud.Hud;
 import org.jeuroute.gamecore.hud.presentation.DebugProfilerWindowContent;
 import org.jeuroute.gamecore.hud.presentation.HudLayout;
@@ -127,7 +127,7 @@ class GameManagerActionTest {
 		boolean[] debugEnabled = { false };
 		boolean[] personRoutesEnabled = { false };
 		DebugProfilerWindowContent content = new DebugProfilerWindowContent(
-			new org.jeuroute.gamecore.PerformanceProfiler(),
+			new org.jeuroute.gamecore.performance.PerformanceProfiler(),
 			() -> new Point(0, 0),
 			() -> debugEnabled[0],
 			() -> debugEnabled[0] = !debugEnabled[0],

@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.awt.Point;
 import java.util.List;
 import java.util.Random;
-import org.jeuroute.manager.WorldMap;
+import org.jeuroute.manager.world.WorldMap;
 import org.jeuroute.model.world.enums.TerrainType;
 import org.jeuroute.model.world.network.RoadGraph;
 import org.jeuroute.model.world.terrain.generation.IslandTerrainGenerator;

@@ -8,13 +8,22 @@ import java.util.Random;
 import java.util.function.LongConsumer;
 import org.jeuroute.configuration.actions.ActionHandlerRegistry;
 import org.jeuroute.configuration.indicators.IndicatorRegistry;
-import org.jeuroute.gamecore.MouseHandler;
-import org.jeuroute.gamecore.PerformanceProfiler;
 import org.jeuroute.gamecore.controllers.LineCreationController;
 import org.jeuroute.gamecore.controllers.LineVehicleDialogController;
+import org.jeuroute.gamecore.controllers.MouseHandler;
 import org.jeuroute.gamecore.hud.Hud;
 import org.jeuroute.gamecore.hud.elements.HudButton;
+import org.jeuroute.gamecore.performance.PerformanceProfiler;
+import org.jeuroute.gamecore.performance.PerformanceService;
 import org.jeuroute.gamecore.time.SimulationClock;
+import org.jeuroute.manager.hud.HudManager;
+import org.jeuroute.manager.input.MouseHandlerManager;
+import org.jeuroute.manager.settlement.PersonManager;
+import org.jeuroute.manager.transport.LineManager;
+import org.jeuroute.manager.transport.VehicleManager;
+import org.jeuroute.manager.world.FixedEntityManager;
+import org.jeuroute.manager.world.ResourceBuildingManager;
+import org.jeuroute.manager.world.WorldMap;
 import org.jeuroute.model.records.preview.LinePreview;
 import org.jeuroute.model.records.preview.WorldPreviewData;
 import org.jeuroute.model.records.time.SimulationTick;
@@ -40,7 +49,7 @@ public final class GameManager {
 	private final VehicleManager vehicleManager;
 	private final PersonManager personManager;
 	private final LineManager lineManager;
-	private final PerformanceManager performanceManager = new PerformanceManager();
+	private final PerformanceService performanceService = new PerformanceService();
 
 	private final ActionHandlerRegistry actionHandlers = new ActionHandlerRegistry();
 	private final IndicatorRegistry indicatorRegistry = new IndicatorRegistry();
@@ -79,7 +88,7 @@ public final class GameManager {
 			worldMap.getResourceBuildingManager().getBuildings(),
 			worldMap.getDepots(),
 			random,
-			performanceManager.getPerformanceProfiler()
+			performanceService.getPerformanceProfiler()
 		);
 		this.lineManager = new LineManager(worldMap.getRoadGraph());
 		this.mouseHandlerManager = new MouseHandlerManager(
@@ -128,8 +137,8 @@ public final class GameManager {
 		initializeWorld();
 	}
 
-	public PerformanceManager getPerformanceManager() {
-		return performanceManager;
+	public PerformanceService getPerformanceService() {
+		return performanceService;
 	}
 
 	public RoadGraph getRoadGraph() {
@@ -239,7 +248,7 @@ public final class GameManager {
 			personManager.update(tick);
 			worldMap.update(tick);
 		} finally {
-			this.performanceManager
+			this.performanceService
 				.getPerformanceProfiler()
 				.record(PerformanceProfiler.Section.SIMULATION, System.nanoTime() - startedAtNanos);
 		}
